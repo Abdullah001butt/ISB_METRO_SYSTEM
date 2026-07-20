@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 import { evaluateRouteDeviation, evaluateDelay } from "@/lib/alertRules";
+import { enforceRateLimit, writeRateLimit } from "@/lib/rateLimit";
 
 const bodySchema = z.object({
   busId: z.string(),
@@ -12,6 +13,9 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const limited = await enforceRateLimit(request, writeRateLimit);
+  if (limited) return limited;
+
   const auth = requireRole(request, "driver");
   if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

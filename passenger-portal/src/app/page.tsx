@@ -5,7 +5,8 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import type { LiveBus, Station } from "@/lib/types";
+import { useLiveBuses } from "@/lib/useLiveBuses";
+import type { Station } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
@@ -22,32 +23,23 @@ const LiveMap = dynamic(() => import("@/components/LiveMap").then((m) => m.LiveM
 export default function HomePage() {
   const router = useRouter();
   const [stations, setStations] = useState<Station[]>([]);
-  const [buses, setBuses] = useState<LiveBus[]>([]);
   const [query, setQuery] = useState("");
+  const { buses, source } = useLiveBuses();
 
   useEffect(() => {
     let cancelled = false;
 
-    async function load() {
-      try {
-        const [stationsRes, busesRes] = await Promise.all([
-          api.get<{ stations: Station[] }>("/api/stations"),
-          api.get<{ buses: LiveBus[] }>("/api/live-buses"),
-        ]);
-        if (cancelled) return;
-        setStations(stationsRes.stations);
-        setBuses(busesRes.buses);
-      } catch {
-        // silently ignore — map/section below shows empty state
-      }
-    }
+    api
+      .get<{ stations: Station[] }>("/api/stations")
+      .then((res) => {
+        if (!cancelled) setStations(res.stations);
+      })
+      .catch(() => {
+        // silently ignore — search/map sections show empty state
+      });
 
-     
-    load();
-    const interval = setInterval(load, 8000);
     return () => {
       cancelled = true;
-      clearInterval(interval);
     };
   }, []);
 
@@ -112,9 +104,14 @@ export default function HomePage() {
             <Icon name="sensors" size={16} className="text-accent" />
             Live Bus Map
           </h2>
-          <Badge tone={reporting > 0 ? "green" : "gray"}>
-            {reporting} of {buses.length} buses live
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge tone={source === "websocket" ? "green" : "gray"}>
+              {source === "websocket" ? "Real-time" : "Polling"}
+            </Badge>
+            <Badge tone={reporting > 0 ? "green" : "gray"}>
+              {reporting} of {buses.length} buses live
+            </Badge>
+          </div>
         </div>
         <Card padded={false} className="h-120 overflow-hidden">
           <LiveMap buses={buses} stations={stations} />

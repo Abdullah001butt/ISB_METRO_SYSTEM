@@ -1,0 +1,15 @@
+{
+  "name": "metrobus-ws-server",
+  "version": "1.0.0",
+  "description": "Real-time WebSocket relay for the Islamabad Metro Bus system — polls the backend and pushes live bus updates to connected clients.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "node-fetch": "^2.7.0",
+    "ws": "^8.21.1"
+  }
+}

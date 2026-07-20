@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import type { LiveBus, Driver, Alert } from "@/lib/types";
+import { useLiveBuses } from "@/lib/useLiveBuses";
+import type { Driver, Alert } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -54,7 +55,7 @@ function StatCard({
 }
 
 export default function DashboardPage() {
-  const [buses, setBuses] = useState<LiveBus[]>([]);
+  const { buses, source } = useLiveBuses();
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,31 +67,11 @@ export default function DashboardPage() {
 
     async function load() {
       try {
-        const [busesRes, driversRes, alertsRes] = await Promise.all([
-          api.get<{ buses: LiveBus[] }>("/api/live-buses"),
+        const [driversRes, alertsRes] = await Promise.all([
           api.get<{ drivers: Driver[] }>("/api/drivers"),
           api.get<{ alerts: Alert[] }>("/api/alerts?status=OPEN"),
         ]);
         if (cancelled) return;
-
-        const online = busesRes.buses.filter((b) => b.location).length;
-        const values: Record<StatKey, number> = {
-          total: busesRes.buses.length,
-          online,
-          offline: busesRes.buses.length - online,
-          drivers: driversRes.drivers.filter((d) => d.isActive).length,
-          alerts: alertsRes.alerts.length,
-        };
-
-        setHistory((prev) => {
-          const next = { ...prev };
-          for (const key of Object.keys(values) as StatKey[]) {
-            next[key] = [...prev[key], values[key]].slice(-HISTORY_LENGTH);
-          }
-          return next;
-        });
-
-        setBuses(busesRes.buses);
         setDrivers(driversRes.drivers);
         setAlerts(alertsRes.alerts);
         setError(null);
@@ -110,6 +91,27 @@ export default function DashboardPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const online = buses.filter((b) => b.location).length;
+    const values: Record<StatKey, number> = {
+      total: buses.length,
+      online,
+      offline: buses.length - online,
+      drivers: drivers.filter((d) => d.isActive).length,
+      alerts: alerts.length,
+    };
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- appending a rolling sparkline history when live data changes
+    setHistory((prev) => {
+      const next = { ...prev };
+      for (const key of Object.keys(values) as StatKey[]) {
+        next[key] = [...prev[key], values[key]].slice(-HISTORY_LENGTH);
+      }
+      return next;
+    });
+     
+  }, [buses, drivers, alerts]);
+
   const onlineBuses = buses.filter((b) => b.location).length;
   const values: Record<StatKey, number> = {
     total: buses.length,
@@ -121,7 +123,14 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <PageHeader title="Dashboard" description="Live overview of the network. Refreshes every 8s." />
+      <PageHeader
+        title="Dashboard"
+        description={
+          source === "websocket"
+            ? "Live overview — bus data via WebSocket, rest refreshes every 8s."
+            : "Live overview of the network. Refreshes every 8s."
+        }
+      />
 
       {error && <p className="mb-4 text-sm text-danger">{error}</p>}
 

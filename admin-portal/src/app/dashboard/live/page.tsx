@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { api } from "@/lib/api";
-import type { LiveBus } from "@/lib/types";
+import { useLiveBuses } from "@/lib/useLiveBuses";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 
@@ -17,44 +15,23 @@ const LiveMap = dynamic(() => import("@/components/LiveMap").then((m) => m.LiveM
 });
 
 export default function LiveTrackingPage() {
-  const [buses, setBuses] = useState<LiveBus[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const res = await api.get<{ buses: LiveBus[] }>("/api/live-buses");
-        if (!cancelled) {
-          setBuses(res.buses);
-          setError(null);
-        }
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load buses");
-      }
-    }
-
-     
-    load();
-    const interval = setInterval(load, 5000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, []);
-
+  const { buses, source, error } = useLiveBuses();
   const reporting = buses.filter((b) => b.location).length;
 
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col">
       <PageHeader
         title="Live Tracking"
-        description="Refreshes every 5s."
+        description={source === "websocket" ? "Live via WebSocket — instant updates." : "Refreshes every 8s (polling)."}
         action={
-          <Badge tone={reporting > 0 ? "green" : "gray"}>
-            {reporting} of {buses.length} buses reporting
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge tone={source === "websocket" ? "green" : "gray"}>
+              {source === "websocket" ? "Real-time" : "Polling"}
+            </Badge>
+            <Badge tone={reporting > 0 ? "green" : "gray"}>
+              {reporting} of {buses.length} buses reporting
+            </Badge>
+          </div>
         }
       />
 
