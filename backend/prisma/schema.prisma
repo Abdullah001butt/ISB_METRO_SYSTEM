@@ -1,0 +1,187 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AlertType {
+  DELAY
+  ROUTE_DEVIATION
+  BREAKDOWN
+  OTHER
+}
+
+enum AlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum CrowdLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TripStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("admin")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  activityLogs ActivityLog[]
+}
+
+model Driver {
+  id           String   @id @default(cuid())
+  name         String
+  cnic         String   @unique
+  phone        String
+  email        String?  @unique
+  passwordHash String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  buses  Bus[]
+  trips  Trip[]
+}
+
+model Bus {
+  id           String   @id @default(cuid())
+  busNumber    String   @unique
+  capacity     Int      @default(40)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  driverId String?
+  driver   Driver? @relation(fields: [driverId], references: [id])
+
+  routeId String?
+  route   Route?  @relation(fields: [routeId], references: [id])
+
+  gpsLogs      GPSLog[]
+  crowdStatus  CrowdStatus[]
+  trips        Trip[]
+  alerts       Alert[]
+  aiPredictions AIPrediction[]
+}
+
+model Route {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  buses      Bus[]
+  busRoutes  BusRoute[]
+  trips      Trip[]
+}
+
+model Station {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  latitude  Float
+  longitude Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  busRoutes BusRoute[]
+}
+
+model BusRoute {
+  id        String @id @default(cuid())
+  routeId   String
+  route     Route  @relation(fields: [routeId], references: [id])
+  stationId String
+  station   Station @relation(fields: [stationId], references: [id])
+  sequence  Int
+
+  @@unique([routeId, stationId])
+  @@unique([routeId, sequence])
+}
+
+model Trip {
+  id        String     @id @default(cuid())
+  busId     String
+  bus       Bus        @relation(fields: [busId], references: [id])
+  driverId  String
+  driver    Driver     @relation(fields: [driverId], references: [id])
+  routeId   String
+  route     Route      @relation(fields: [routeId], references: [id])
+  status    TripStatus @default(NOT_STARTED)
+  startedAt DateTime?
+  endedAt   DateTime?
+  createdAt DateTime   @default(now())
+}
+
+model GPSLog {
+  id        String   @id @default(cuid())
+  busId     String
+  bus       Bus      @relation(fields: [busId], references: [id])
+  latitude  Float
+  longitude Float
+  speed     Float?
+  recordedAt DateTime @default(now())
+
+  @@index([busId, recordedAt])
+}
+
+model CrowdStatus {
+  id        String     @id @default(cuid())
+  busId     String
+  bus       Bus        @relation(fields: [busId], references: [id])
+  level     CrowdLevel
+  recordedAt DateTime  @default(now())
+
+  @@index([busId, recordedAt])
+}
+
+model Alert {
+  id        String      @id @default(cuid())
+  busId     String?
+  bus       Bus?        @relation(fields: [busId], references: [id])
+  type      AlertType
+  status    AlertStatus @default(OPEN)
+  message   String
+  createdAt DateTime    @default(now())
+  resolvedAt DateTime?
+}
+
+model AIPrediction {
+  id           String   @id @default(cuid())
+  busId        String
+  bus          Bus      @relation(fields: [busId], references: [id])
+  stationId    String?
+  predictedEtaMinutes Float?
+  predictedDelayMinutes Float?
+  createdAt    DateTime @default(now())
+
+  @@index([busId, createdAt])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  adminId   String?
+  admin     Admin?   @relation(fields: [adminId], references: [id])
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+}
