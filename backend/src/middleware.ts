@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 const ALLOWED_ORIGINS = [
   "http://localhost:3001",
   "http://localhost:3002",
+  "https://admin-portal-two-ashen.vercel.app",
+  "https://passenger-portal-flame.vercel.app",
 ];
 
 function corsHeaders(origin: string | null) {
