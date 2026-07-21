@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar } from "@/components/Sidebar";
 import { Icon } from "@/components/ui/Icon";
+import { CommandPalette } from "@/components/CommandPalette";
+import { useAlertToasts } from "@/lib/useAlertToasts";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { admin, loading } = useAuth();
@@ -17,6 +19,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
   }, [loading, admin, router]);
 
+  useAlertToasts();
+
   if (loading || !admin) {
     return (
       <div className="flex flex-1 items-center justify-center bg-canvas">
@@ -27,6 +31,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex flex-1 bg-canvas">
+      <CommandPalette />
+
       <div className="hidden border-r border-line lg:block">
         <Sidebar />
       </div>

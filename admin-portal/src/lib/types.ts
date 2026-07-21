@@ -63,6 +63,33 @@ export type AIPrediction = {
   createdAt: string;
 };
 
+export type GpsLogEntry = {
+  id: string;
+  busId: string;
+  latitude: number;
+  longitude: number;
+  speed: number | null;
+  recordedAt: string;
+};
+
+export type RouteAnalytics = {
+  routeId: string;
+  routeName: string;
+  onTimePercentage: number | null;
+  avgDelayMinutes: number | null;
+  sampleCount: number;
+  speedByHour: { hour: number; avgSpeedKmh: number; sampleCount: number }[];
+};
+
+export type PublicAlert = {
+  id: string;
+  type: "DELAY" | "ROUTE_DEVIATION" | "BREAKDOWN" | "OTHER";
+  status: "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
+  message: string;
+  createdAt: string;
+  bus: { busNumber: string } | null;
+};
+
 export type ActivityLog = {
   id: string;
   adminId: string | null;

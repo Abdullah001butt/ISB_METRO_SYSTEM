@@ -14,6 +14,7 @@ const links = [
   { href: "/dashboard/live", label: "Live Tracking", icon: "sensors" },
   { href: "/dashboard/alerts", label: "Alerts", icon: "notifications" },
   { href: "/dashboard/ai", label: "AI Predictions", icon: "psychology" },
+  { href: "/dashboard/analytics", label: "Analytics", icon: "monitoring" },
   { href: "/dashboard/logs", label: "Activity Logs", icon: "history" },
 ];
 
@@ -37,6 +38,17 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           aria-label="Close menu"
         >
           <Icon name="close" size={18} />
+        </button>
+      </div>
+
+      <div className="px-3 pt-3">
+        <button
+          onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+          className="flex w-full items-center gap-2.5 rounded-xl border border-line px-3 py-2 text-left text-sm text-muted hover:bg-surface"
+        >
+          <Icon name="search" size={16} />
+          Search
+          <kbd className="ml-auto rounded border border-line px-1.5 text-xs">⌘K</kbd>
         </button>
       </div>
 
