@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { haversineDistanceKm } from "@/lib/geo";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Route } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
@@ -40,6 +41,7 @@ function computeTripResult(originId: string, destinationId: string, routes: Rout
 }
 
 export default function PlannerPage() {
+  const { t } = useLanguage();
   const [routes, setRoutes] = useState<Route[]>([]);
   const [loading, setLoading] = useState(true);
   const [originId, setOriginId] = useState("");
@@ -62,21 +64,19 @@ export default function PlannerPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
-      <h1 className="text-xl font-semibold text-ink">Trip Planner</h1>
-      <p className="mt-1 text-sm text-muted">
-        Pick your origin and destination to estimate travel time along the route.
-      </p>
+      <h1 className="text-xl font-semibold text-ink">{t("plannerTitle")}</h1>
+      <p className="mt-1 text-sm text-muted">{t("plannerSubtitle")}</p>
 
       <Card className="mt-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-xs font-medium text-muted">From</label>
+            <label className="block text-xs font-medium text-muted">{t("from")}</label>
             <select
               value={originId}
               onChange={(e) => setOriginId(e.target.value)}
               className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             >
-              <option value="">Select a station...</option>
+              <option value="">{t("selectStation")}</option>
               {allStations.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -85,13 +85,13 @@ export default function PlannerPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-muted">To</label>
+            <label className="block text-xs font-medium text-muted">{t("to")}</label>
             <select
               value={destinationId}
               onChange={(e) => setDestinationId(e.target.value)}
               className="mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             >
-              <option value="">Select a station...</option>
+              <option value="">{t("selectStation")}</option>
               {allStations.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -104,12 +104,10 @@ export default function PlannerPage() {
 
       <div className="mt-6">
         {loading ? (
-          <p className="text-center text-sm text-muted">Loading routes...</p>
+          <p className="text-center text-sm text-muted">{t("loadingRoutes")}</p>
         ) : result === "no-route" ? (
           <Card>
-            <p className="text-center text-sm text-muted">
-              No single route directly connects these two stations yet.
-            </p>
+            <p className="text-center text-sm text-muted">{t("noRouteConnects")}</p>
           </Card>
         ) : result ? (
           <Card>
@@ -139,9 +137,7 @@ export default function PlannerPage() {
             </div>
           </Card>
         ) : (
-          <p className="text-center text-sm text-muted">
-            Select an origin and destination to see the estimate.
-          </p>
+          <p className="text-center text-sm text-muted">{t("selectToSeeEstimate")}</p>
         )}
       </div>
     </div>

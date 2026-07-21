@@ -3,10 +3,12 @@
 import { useEffect, useState, use as usePromise } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Station, LiveBus, BatchEtaResponse, BatchEtaEntry, Route } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
+import { LiveCountdown } from "@/components/ui/LiveCountdown";
 
 type BusWithEta = LiveBus & { eta: BatchEtaEntry | null };
 
@@ -18,6 +20,7 @@ export default function StationDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = usePromise(params);
+  const { t } = useLanguage();
   const [station, setStation] = useState<Station | null>(null);
   const [buses, setBuses] = useState<BusWithEta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,26 +91,24 @@ export default function StationDetailPage({
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
       <Link href="/stations" className="flex items-center gap-1.5 text-sm text-muted hover:text-ink">
         <Icon name="arrow_back" size={15} />
-        Back to stations
+        {t("backToStations")}
       </Link>
 
       {loading ? (
-        <p className="mt-8 text-center text-sm text-muted">Loading...</p>
+        <p className="mt-8 text-center text-sm text-muted">{t("loading")}</p>
       ) : error || !station ? (
-        <p className="mt-8 text-center text-sm text-danger">{error ?? "Station not found"}</p>
+        <p className="mt-8 text-center text-sm text-danger">{error ?? t("stationNotFound")}</p>
       ) : (
         <>
           <h1 className="mt-4 text-2xl font-bold text-ink">{station.name}</h1>
           <p className="mt-1 text-sm text-muted">
-            {buses.length} bus{buses.length === 1 ? "" : "es"} currently serving this station
+            {buses.length} {buses.length === 1 ? t("busServing") : t("busesServing")}
           </p>
 
           <div className="mt-6 space-y-3">
             {buses.length === 0 ? (
               <Card>
-                <p className="text-center text-sm text-muted">
-                  No buses are currently en route to this station.
-                </p>
+                <p className="text-center text-sm text-muted">{t("noBusesEnRoute")}</p>
               </Card>
             ) : (
               buses.map((bus) => (
@@ -126,16 +127,16 @@ export default function StationDetailPage({
                     <div className="text-right">
                       {bus.eta?.etaMinutes != null ? (
                         <>
-                          <p className="flex items-center justify-end gap-1 text-lg font-bold text-accent-strong">
+                          <p className="flex items-center justify-end gap-1 text-lg font-bold text-accent-strong tabular-nums">
                             <Icon name="schedule" size={15} />
-                            {Math.round(bus.eta.etaMinutes)} min
+                            <LiveCountdown etaMinutes={bus.eta.etaMinutes} />
                           </p>
                           <p className="text-xs text-muted">
-                            {bus.eta.source === "ai" ? "AI prediction" : "estimated"}
+                            {bus.eta.source === "ai" ? t("aiPrediction") : t("estimated")}
                           </p>
                         </>
                       ) : (
-                        <p className="text-sm text-muted">ETA unavailable</p>
+                        <p className="text-sm text-muted">{t("etaUnavailable")}</p>
                       )}
                     </div>
                   </div>
@@ -143,7 +144,9 @@ export default function StationDetailPage({
                   {bus.crowdLevel && (
                     <div className="mt-3 flex items-center gap-1.5">
                       <Icon name="group" size={13} className="text-muted" />
-                      <Badge tone={crowdTone[bus.crowdLevel]}>{bus.crowdLevel} crowd</Badge>
+                      <Badge tone={crowdTone[bus.crowdLevel]}>
+                        {bus.crowdLevel} {t("crowdSuffix")}
+                      </Badge>
                     </div>
                   )}
                 </Card>

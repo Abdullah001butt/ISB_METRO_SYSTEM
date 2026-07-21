@@ -39,6 +39,10 @@ body {
   color: var(--color-ink);
 }
 
+html[dir="rtl"] body {
+  font-family: "Noto Nastaliq Urdu", var(--font-geist-sans), sans-serif;
+}
+
 .material-symbols-outlined {
   font-family: "Material Symbols Outlined";
   font-weight: normal;

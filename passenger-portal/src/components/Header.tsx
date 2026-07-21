@@ -3,16 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKey } from "@/lib/translations";
 
-const links = [
-  { href: "/", label: "Home" },
-  { href: "/stations", label: "Stations" },
-  { href: "/planner", label: "Trip Planner" },
-  { href: "/about", label: "About" },
+const links: { href: string; key: TranslationKey }[] = [
+  { href: "/", key: "navHome" },
+  { href: "/stations", key: "navStations" },
+  { href: "/planner", key: "navPlanner" },
+  { href: "/about", key: "navAbout" },
 ];
 
 export function Header() {
   const pathname = usePathname();
+  const { lang, toggle, t } = useLanguage();
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-surface/90 backdrop-blur">
@@ -21,25 +24,36 @@ export function Header() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-white">
             <Icon name="directions_bus" size={17} filled />
           </div>
-          <span className="text-sm font-semibold text-ink">Metro Bus Islamabad</span>
+          <span className="text-sm font-semibold text-ink">{t("brandName")}</span>
         </Link>
 
-        <nav className="flex items-center gap-1">
-          {links.map((link) => {
-            const active = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                  active ? "bg-accent-soft text-accent-strong" : "text-muted hover:bg-canvas"
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="flex items-center gap-1">
+          <nav className="flex items-center gap-1">
+            {links.map((link) => {
+              const active = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                    active ? "bg-accent-soft text-accent-strong" : "text-muted hover:bg-canvas"
+                  }`}
+                >
+                  {t(link.key)}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <button
+            onClick={toggle}
+            className="ml-1 flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-muted hover:bg-canvas"
+            aria-label="Toggle language"
+          >
+            <Icon name="translate" size={15} />
+            {lang === "en" ? "اردو" : "EN"}
+          </button>
+        </div>
       </div>
     </header>
   );

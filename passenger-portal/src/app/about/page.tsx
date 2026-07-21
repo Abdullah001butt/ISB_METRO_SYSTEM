@@ -1,52 +1,34 @@
+"use client";
+
 import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKey } from "@/lib/translations";
 
-const features = [
-  {
-    icon: "sensors",
-    title: "Live Tracking",
-    description: "See simulated bus positions update in real time across the network.",
-  },
-  {
-    icon: "psychology",
-    title: "AI-Powered ETAs",
-    description: "Arrival estimates blend live GPS data with predictions from the AI module.",
-  },
-  {
-    icon: "directions_bus",
-    title: "Route Information",
-    description: "Browse routes, ordered station sequences, and which buses serve each stop.",
-  },
-  {
-    icon: "location_on",
-    title: "No Login Required",
-    description: "Built for quick access — at a stop, on a phone, or on a station display screen.",
-  },
+const features: { icon: string; titleKey: TranslationKey; descKey: TranslationKey }[] = [
+  { icon: "sensors", titleKey: "featLiveTitle", descKey: "featLiveDesc" },
+  { icon: "psychology", titleKey: "featAiTitle", descKey: "featAiDesc" },
+  { icon: "directions_bus", titleKey: "featRouteTitle", descKey: "featRouteDesc" },
+  { icon: "location_on", titleKey: "featNoLoginTitle", descKey: "featNoLoginDesc" },
 ];
 
 export default function AboutPage() {
+  const { t } = useLanguage();
+
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
-      <h1 className="text-2xl font-bold text-ink">About This Project</h1>
-      <p className="mt-3 text-sm leading-relaxed text-muted">
-        The Islamabad Metro Bus AI Information System is a prototype transportation platform
-        that layers real-time tracking, predictive analytics, and passenger information on top
-        of the existing Metro Bus network. This portal is the public-facing passenger
-        experience — no registration required.
-      </p>
-      <p className="mt-3 text-sm leading-relaxed text-muted">
-        This is a functional prototype: GPS, buses, and drivers are simulated. No real hardware,
-        live traffic data, or production-scale hosting is used.
-      </p>
+      <h1 className="text-2xl font-bold text-ink">{t("aboutTitle")}</h1>
+      <p className="mt-3 text-sm leading-relaxed text-muted">{t("aboutP1")}</p>
+      <p className="mt-3 text-sm leading-relaxed text-muted">{t("aboutP2")}</p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
         {features.map((f) => (
-          <Card key={f.title}>
+          <Card key={f.titleKey}>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-soft text-accent-strong">
               <Icon name={f.icon} size={18} />
             </div>
-            <p className="mt-3 text-sm font-semibold text-ink">{f.title}</p>
-            <p className="mt-1 text-sm text-muted">{f.description}</p>
+            <p className="mt-3 text-sm font-semibold text-ink">{t(f.titleKey)}</p>
+            <p className="mt-1 text-sm text-muted">{t(f.descKey)}</p>
           </Card>
         ))}
       </div>

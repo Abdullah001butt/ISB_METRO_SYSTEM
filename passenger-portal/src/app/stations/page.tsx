@@ -3,11 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Station } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
 
 export default function StationsPage() {
+  const { t } = useLanguage();
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -27,26 +29,24 @@ export default function StationsPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
-      <h1 className="text-xl font-semibold text-ink">Stations</h1>
-      <p className="mt-1 text-sm text-muted">
-        Browse all metro bus stops, or search by name.
-      </p>
+      <h1 className="text-xl font-semibold text-ink">{t("stationsTitle")}</h1>
+      <p className="mt-1 text-sm text-muted">{t("stationsSubtitle")}</p>
 
       <div className="relative mt-5">
         <Icon name="search" size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search stations..."
+          placeholder={t("searchStations")}
           className="w-full rounded-lg border border-line bg-surface py-2.5 pl-10 pr-4 text-sm shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
         />
       </div>
 
       <div className="mt-5 space-y-2">
         {loading ? (
-          <p className="py-8 text-center text-sm text-muted">Loading...</p>
+          <p className="py-8 text-center text-sm text-muted">{t("loading")}</p>
         ) : filtered.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted">No stations found.</p>
+          <p className="py-8 text-center text-sm text-muted">{t("noStationsFound")}</p>
         ) : (
           filtered.map((s) => (
             <Link key={s.id} href={`/stations/${s.id}`}>

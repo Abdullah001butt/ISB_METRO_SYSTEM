@@ -63,3 +63,5 @@ export type BatchEtaResponse = {
   stationId: string;
   etas: BatchEtaEntry[];
 };
+
+export type NearestStation = Station & { distanceKm: number };

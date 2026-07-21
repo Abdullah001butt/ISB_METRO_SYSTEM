@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,13 +34,15 @@ export default function RootLayout({
         {/* eslint-disable-next-line @next/next/no-page-custom-font -- this rule predates the App Router; the root layout's <head> is shared by every page */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&family=Noto+Nastaliq+Urdu:wght@400..700&display=swap"
         />
       </head>
       <body className="min-h-full flex flex-col bg-canvas text-ink">
-        <Header />
-        <div className="flex flex-1 flex-col">{children}</div>
-        <Footer />
+        <LanguageProvider>
+          <Header />
+          <div className="flex flex-1 flex-col">{children}</div>
+          <Footer />
+        </LanguageProvider>
       </body>
     </html>
   );

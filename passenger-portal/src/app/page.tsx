@@ -6,10 +6,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useLiveBuses } from "@/lib/useLiveBuses";
-import type { Station } from "@/lib/types";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { NearestStation, Station } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
+import { Button } from "@/components/ui/Button";
 
 const LiveMap = dynamic(() => import("@/components/LiveMap").then((m) => m.LiveMap), {
   ssr: false,
@@ -22,9 +24,14 @@ const LiveMap = dynamic(() => import("@/components/LiveMap").then((m) => m.LiveM
 
 export default function HomePage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [stations, setStations] = useState<Station[]>([]);
   const [query, setQuery] = useState("");
   const { buses, source } = useLiveBuses();
+
+  const [locating, setLocating] = useState(false);
+  const [nearest, setNearest] = useState<NearestStation[] | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,17 +62,43 @@ export default function HomePage() {
     if (filtered.length > 0) router.push(`/stations/${filtered[0].id}`);
   }
 
+  function findNearMe() {
+    setLocating(true);
+    setLocationError(null);
+    setNearest(null);
+
+    if (!navigator.geolocation) {
+      setLocationError(t("locationDenied"));
+      setLocating(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const res = await api.get<{ stations: NearestStation[] }>(
+            `/api/stations/nearest?lat=${position.coords.latitude}&lon=${position.coords.longitude}&limit=5`
+          );
+          setNearest(res.stations);
+        } catch {
+          setLocationError(t("locationDenied"));
+        } finally {
+          setLocating(false);
+        }
+      },
+      () => {
+        setLocationError(t("locationDenied"));
+        setLocating(false);
+      }
+    );
+  }
+
   return (
     <div>
       <section className="border-b border-line bg-linear-to-b from-accent-soft to-canvas">
         <div className="mx-auto max-w-6xl px-4 py-14 text-center sm:px-6">
-          <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-            Track your Metro Bus in real time
-          </h1>
-          <p className="mx-auto mt-3 max-w-xl text-muted">
-            Live locations, arrival estimates, and route information for the Islamabad Metro
-            Bus network — no login required.
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">{t("heroTitle")}</h1>
+          <p className="mx-auto mt-3 max-w-xl text-muted">{t("heroSubtitle")}</p>
 
           <div className="relative mx-auto mt-8 max-w-lg">
             <Icon
@@ -77,7 +110,7 @@ export default function HomePage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && goToFirst()}
-              placeholder="Search for a station..."
+              placeholder={t("searchPlaceholder")}
               className="w-full rounded-full border border-line bg-surface py-3 pl-11 pr-4 text-sm shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
             {filtered.length > 0 && (
@@ -95,6 +128,38 @@ export default function HomePage() {
               </div>
             )}
           </div>
+
+          <div className="mt-4 flex flex-col items-center gap-3">
+            <Button variant="secondary" onClick={findNearMe} disabled={locating}>
+              <Icon name="my_location" size={16} />
+              {locating ? t("locating") : t("findNearMe")}
+            </Button>
+
+            {locationError && <p className="text-sm text-danger">{locationError}</p>}
+
+            {nearest && nearest.length > 0 && (
+              <div className="w-full max-w-lg rounded-xl border border-line bg-surface p-3 text-left shadow-sm">
+                <p className="mb-2 px-1 text-xs font-semibold text-muted">{t("nearestStations")}</p>
+                <div className="space-y-1">
+                  {nearest.map((s) => (
+                    <Link
+                      key={s.id}
+                      href={`/stations/${s.id}`}
+                      className="flex items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-canvas"
+                    >
+                      <span className="flex items-center gap-2 text-ink">
+                        <Icon name="location_on" size={14} className="text-accent" />
+                        {s.name}
+                      </span>
+                      <span className="text-xs text-muted">
+                        {s.distanceKm} km {t("away")}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -102,14 +167,14 @@ export default function HomePage() {
         <div className="mb-4 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
             <Icon name="sensors" size={16} className="text-accent" />
-            Live Bus Map
+            {t("liveBusMap")}
           </h2>
           <div className="flex items-center gap-2">
             <Badge tone={source === "websocket" ? "green" : "gray"}>
-              {source === "websocket" ? "Real-time" : "Polling"}
+              {source === "websocket" ? t("realTime") : t("polling")}
             </Badge>
             <Badge tone={reporting > 0 ? "green" : "gray"}>
-              {reporting} of {buses.length} buses live
+              {reporting} / {buses.length} {t("busesLive")}
             </Badge>
           </div>
         </div>
