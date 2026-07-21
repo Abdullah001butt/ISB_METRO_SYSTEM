@@ -20,9 +20,10 @@ See `backend/API_DOCS.md` for the full API reference.
 
 ## Running locally
 
-You need Node.js, Python 3.10+, and a PostgreSQL database (a free one from
-[Prisma Postgres](https://www.prisma.io/postgres) works well for development). Rate limiting
-needs a free [Upstash Redis](https://upstash.com) database.
+You need Node.js, Python 3.10+, and a PostgreSQL database — [Neon](https://neon.tech)'s free
+tier is recommended (storage/compute-based limits, not a hard monthly query cap, which matters
+once you have background services polling continuously). Rate limiting needs a free
+[Upstash Redis](https://upstash.com) database.
 
 **1. Backend**
 ```bash
@@ -85,3 +86,7 @@ Set `NEXT_PUBLIC_WS_URL` in each frontend's `.env.local` to point at it.
 - **AI predictions are additive, not required** — `GET /api/eta` prefers a fresh AI
   prediction (<2 min old) but transparently falls back to a haversine-distance/speed estimate
   when none exists, so the frontends work identically whether or not the AI module is running.
+- **Database provider**: started on Prisma Postgres (free tier), migrated to Neon after the
+  Prisma free plan's monthly query quota was exhausted by continuous polling from the AI module
+  and WebSocket relay. If you fork this and add always-on background services, pick a plan whose
+  limits match a continuous-polling access pattern, not just interactive/dev usage.
