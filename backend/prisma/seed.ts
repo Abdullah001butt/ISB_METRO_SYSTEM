@@ -16,23 +16,69 @@ const STATIONS = [
   { name: "Karachi Company", latitude: 33.6693, longitude: 73.0248 },
   { name: "G-9 Markaz", latitude: 33.6789, longitude: 73.0356 },
   { name: "22 No Chungi", latitude: 33.61, longitude: 73.07 },
+  { name: "Khanna Pul", latitude: 33.6478, longitude: 73.1067 },
+  { name: "IJP Road", latitude: 33.6295, longitude: 73.0631 },
+  { name: "Committee Chowk", latitude: 33.6, longitude: 73.0678 },
+  { name: "Zero Point", latitude: 33.7024, longitude: 73.0316 },
+  { name: "Golra Mor", latitude: 33.6547, longitude: 72.9714 },
+  { name: "Bahria Town Phase 7", latitude: 33.5228, longitude: 73.1266 },
+  { name: "Rehmanabad", latitude: 33.5744, longitude: 73.0836 },
+  { name: "Shamsabad", latitude: 33.6141, longitude: 73.0819 },
+  { name: "Barakahu", latitude: 33.7469, longitude: 73.1275 },
 ];
 
 const ROUTES = [
-  { name: "Red Line", description: "Faizabad to Pakistan Secretariat", stations: ["Faizabad", "Pims Chowk", "Aabpara", "Melody", "Pakistan Secretariat"] },
-  { name: "Blue Line", description: "Saddar to 22 No Chungi", stations: ["Saddar", "Karachi Company", "G-9 Markaz", "Melody", "22 No Chungi"] },
+  {
+    name: "Red Line",
+    description: "Faizabad to Pakistan Secretariat",
+    stations: ["Faizabad", "Pims Chowk", "Aabpara", "Melody", "Pakistan Secretariat"],
+  },
+  {
+    name: "Blue Line",
+    description: "Saddar to 22 No Chungi",
+    stations: ["Saddar", "Karachi Company", "G-9 Markaz", "Melody", "22 No Chungi"],
+  },
+  {
+    name: "Green Line",
+    description: "Zero Point to Khanna Pul",
+    stations: ["Zero Point", "G-9 Markaz", "Aabpara", "Faizabad", "Khanna Pul"],
+  },
+  {
+    name: "Orange Line",
+    description: "Golra Mor to Barakahu",
+    stations: ["Golra Mor", "IJP Road", "Committee Chowk", "Shamsabad", "Rehmanabad", "Faizabad", "Barakahu"],
+  },
+  {
+    name: "Purple Line",
+    description: "Bahria Town to Committee Chowk",
+    stations: ["Bahria Town Phase 7", "Rehmanabad", "Shamsabad", "Committee Chowk"],
+  },
 ];
 
 const DRIVERS = [
   { name: "Imran Sheikh", cnic: "3740112345678", phone: "03215556677" },
   { name: "Bilal Ahmed", cnic: "3520123456789", phone: "03001234567" },
   { name: "Usman Tariq", cnic: "3730198765432", phone: "03339876543" },
+  { name: "Kashif Mehmood", cnic: "3520145678901", phone: "03011122334" },
+  { name: "Nasir Hussain", cnic: "3740156789012", phone: "03335566778" },
+  { name: "Waqas Javed", cnic: "3730167890123", phone: "03214455667" },
+  { name: "Adeel Raza", cnic: "3520178901234", phone: "03009988776" },
+  { name: "Faisal Iqbal", cnic: "3740189012345", phone: "03337766554" },
+  { name: "Zeeshan Ali", cnic: "3730190123456", phone: "03219876543" },
+  { name: "Hamza Farooq", cnic: "3520101234567", phone: "03003216549" },
 ];
 
 const BUSES = [
   { busNumber: "MB-101", capacity: 45, driver: "Imran Sheikh", route: "Red Line" },
   { busNumber: "MB-102", capacity: 45, driver: "Bilal Ahmed", route: "Red Line" },
+  { busNumber: "MB-103", capacity: 45, driver: "Kashif Mehmood", route: "Red Line" },
   { busNumber: "MB-201", capacity: 40, driver: "Usman Tariq", route: "Blue Line" },
+  { busNumber: "MB-202", capacity: 40, driver: "Nasir Hussain", route: "Blue Line" },
+  { busNumber: "MB-301", capacity: 45, driver: "Waqas Javed", route: "Green Line" },
+  { busNumber: "MB-302", capacity: 45, driver: "Adeel Raza", route: "Green Line" },
+  { busNumber: "MB-401", capacity: 40, driver: "Faisal Iqbal", route: "Orange Line" },
+  { busNumber: "MB-402", capacity: 40, driver: "Zeeshan Ali", route: "Orange Line" },
+  { busNumber: "MB-501", capacity: 35, driver: "Hamza Farooq", route: "Purple Line" },
 ];
 
 async function resetOperationalData() {

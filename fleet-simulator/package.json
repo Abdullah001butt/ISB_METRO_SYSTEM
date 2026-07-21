@@ -1,0 +1,11 @@
+{
+  "name": "metrobus-fleet-simulator",
+  "version": "1.0.0",
+  "description": "Continuously simulates the seeded fleet driving their routes, so the AI module has real GPS history spread across time to train on.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "license": "ISC",
+  "type": "commonjs"
+}
