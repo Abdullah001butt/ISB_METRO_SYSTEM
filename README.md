@@ -6,7 +6,7 @@ built as a learning/demo project, not a production transit system.
 
 ## Project structure
 
-This is a monorepo with five independent pieces:
+This is a monorepo with six independent pieces:
 
 | Folder | What it is | Stack |
 |---|---|---|
@@ -15,6 +15,7 @@ This is a monorepo with five independent pieces:
 | [`passenger-portal/`](passenger-portal) | Public-facing live tracking site (no login) | Next.js, Tailwind |
 | [`ai-module/`](ai-module) | Trains a speed model on GPS history, publishes ETA/delay predictions | Python, scikit-learn |
 | [`ws-server/`](ws-server) | Real-time relay — pushes live bus updates to connected clients | Node.js, ws |
+| [`fleet-simulator/`](fleet-simulator) | Drives the seeded fleet along their routes continuously, generating the GPS history the AI module trains on | Node.js |
 
 See `backend/API_DOCS.md` for the full API reference.
 
@@ -69,6 +70,17 @@ npm install
 BACKEND_URL=http://localhost:3000 npm start   # ws://localhost:8080
 ```
 Set `NEXT_PUBLIC_WS_URL` in each frontend's `.env.local` to point at it.
+
+**6. Fleet simulator** (optional — without it, buses just sit wherever they last were)
+```bash
+cd fleet-simulator
+BACKEND_URL=http://localhost:3000 npm start
+```
+Logs in as each seeded driver (13s apart, to respect the login rate limit) and drives their
+bus back and forth along its route indefinitely, with realistic speed variance and occasional
+simulated stalls. Run this for a while — hours, ideally — before expecting the AI module's
+speed-vs-hour regression to have enough data to actually fit (it needs ≥8 samples across ≥2
+distinct hours; a five-minute test run will just exercise the fallback heuristic).
 
 ## Architecture notes
 
