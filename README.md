@@ -6,13 +6,14 @@ built as a learning/demo project, not a production transit system.
 
 ## Project structure
 
-This is a monorepo with six independent pieces:
+This is a monorepo with seven independent pieces:
 
 | Folder | What it is | Stack |
 |---|---|---|
 | [`backend/`](backend) | REST API, database, auth, rate limiting, AI prediction hub | Next.js API routes, PostgreSQL, Prisma, Upstash Redis |
 | [`admin-portal/`](admin-portal) | Internal dashboard for managing the network | Next.js, Tailwind |
 | [`passenger-portal/`](passenger-portal) | Public-facing live tracking site (no login) | Next.js, Tailwind |
+| [`driver-app/`](driver-app) | Mobile app for drivers to report live GPS/crowd status | Flutter |
 | [`ai-module/`](ai-module) | Trains a speed model on GPS history, publishes ETA/delay predictions | Python, scikit-learn |
 | [`ws-server/`](ws-server) | Real-time relay — pushes live bus updates to connected clients | Node.js, ws |
 | [`fleet-simulator/`](fleet-simulator) | Drives the seeded fleet along their routes continuously, generating the GPS history the AI module trains on | Node.js |
