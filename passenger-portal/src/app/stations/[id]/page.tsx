@@ -3,12 +3,12 @@
 import { useEffect, useState, use as usePromise } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
-import type { Station, LiveBus, EtaResponse, Route } from "@/lib/types";
+import type { Station, LiveBus, BatchEtaResponse, BatchEtaEntry, Route } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
 
-type BusWithEta = LiveBus & { eta: EtaResponse | null };
+type BusWithEta = LiveBus & { eta: BatchEtaEntry | null };
 
 const crowdTone = { LOW: "green", MEDIUM: "yellow", HIGH: "red" } as const;
 
@@ -45,16 +45,22 @@ export default function StationDetailPage({
           (b) => b.routeId && servingRouteIds.has(b.routeId)
         );
 
-        const withEta = await Promise.all(
-          servingBuses.map(async (bus) => {
-            try {
-              const eta = await api.get<EtaResponse>(`/api/eta?busId=${bus.id}&stationId=${id}`);
-              return { ...bus, eta };
-            } catch {
-              return { ...bus, eta: null };
-            }
-          })
-        );
+        let etaByBusId = new Map<string, BatchEtaEntry>();
+        if (servingBuses.length > 0) {
+          try {
+            const batchRes = await api.get<BatchEtaResponse>(
+              `/api/eta/batch?stationId=${id}&busIds=${servingBuses.map((b) => b.id).join(",")}`
+            );
+            etaByBusId = new Map(batchRes.etas.map((e) => [e.busId, e]));
+          } catch {
+            // leave etaByBusId empty — buses will show "ETA unavailable"
+          }
+        }
+
+        const withEta = servingBuses.map((bus) => ({
+          ...bus,
+          eta: etaByBusId.get(bus.id) ?? null,
+        }));
 
         if (cancelled) return;
         setStation(stationRes.station);
@@ -118,7 +124,7 @@ export default function StationDetailPage({
                     </div>
 
                     <div className="text-right">
-                      {bus.eta ? (
+                      {bus.eta?.etaMinutes != null ? (
                         <>
                           <p className="flex items-center justify-end gap-1 text-lg font-bold text-accent-strong">
                             <Icon name="schedule" size={15} />

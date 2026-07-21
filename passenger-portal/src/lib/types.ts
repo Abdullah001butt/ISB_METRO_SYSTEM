@@ -56,3 +56,10 @@ export type EtaResponse =
       source: "rule-based";
       basedOn: { latitude: number; longitude: number; recordedAt: string };
     };
+
+export type BatchEtaEntry = EtaResponse | { busId: string; stationId: string; etaMinutes: null; source: null };
+
+export type BatchEtaResponse = {
+  stationId: string;
+  etas: BatchEtaEntry[];
+};
