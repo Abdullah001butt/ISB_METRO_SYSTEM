@@ -184,6 +184,16 @@ Resolution order:
 **200 (rule-based source):** `{ "busId", "stationId", "distanceKm", "etaMinutes", "source": "rule-based", "basedOn": {...} }`
 **404:** station not found, or no GPS data yet for the bus
 
+### `GET /api/eta/batch?stationId=...&busIds=a,b,c`
+Public. Same resolution logic as `GET /api/eta`, but for multiple buses against one station in a
+single request — 3 queries total regardless of how many `busIds` are passed, instead of N
+separate requests each running their own queries. Used by the passenger portal's station detail
+page, which needs an ETA per bus serving that station.
+
+**200:** `{ "stationId", "etas": [ { "busId", "stationId", "etaMinutes", "source": "ai" | "rule-based" | null, ... }, ... ] }`
+(entries with no GPS/prediction data return `"etaMinutes": null, "source": null` rather than being omitted)
+**404:** station not found
+
 ---
 
 ## Alerts
