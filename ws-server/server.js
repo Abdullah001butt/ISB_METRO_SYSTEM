@@ -7,6 +7,8 @@ const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 3000);
 const PORT = process.env.PORT || 8080;
 
 let lastLiveBuses = null;
+let lastAlerts = [];
+let seenAlertIds = new Set();
 
 const server = http.createServer((req, res) => {
   if (req.url === "/health") {
@@ -49,6 +51,31 @@ async function pollLiveBuses() {
   }
 }
 
+async function pollAlerts() {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/alerts/public?status=OPEN`);
+    if (!res.ok) {
+      console.error(`Alerts poll got non-OK status: ${res.status}`);
+      return;
+    }
+
+    const { alerts } = await res.json();
+    lastAlerts = alerts;
+
+    const newAlerts = alerts.filter((a) => !seenAlertIds.has(a.id));
+    if (newAlerts.length > 0) {
+      for (const a of newAlerts) seenAlertIds.add(a.id);
+      broadcast("new-alerts", newAlerts);
+      console.log(`Alerts poll: ${newAlerts.length} new alert(s) broadcast`);
+    }
+
+    // Keep the seen-set from growing forever — drop ids no longer open.
+    seenAlertIds = new Set(alerts.map((a) => a.id));
+  } catch (err) {
+    console.error("Failed to poll /api/alerts/public:", err.message);
+  }
+}
+
 wss.on("connection", (socket) => {
   console.log(`Client connected. Total: ${wss.clients.size}`);
 
@@ -57,6 +84,7 @@ wss.on("connection", (socket) => {
       JSON.stringify({ type: "live-buses", data: JSON.parse(lastLiveBuses), timestamp: new Date().toISOString() })
     );
   }
+  socket.send(JSON.stringify({ type: "alerts-snapshot", data: lastAlerts, timestamp: new Date().toISOString() }));
 
   socket.on("close", () => {
     console.log(`Client disconnected. Total: ${wss.clients.size}`);
@@ -64,7 +92,9 @@ wss.on("connection", (socket) => {
 });
 
 setInterval(pollLiveBuses, POLL_INTERVAL_MS);
+setInterval(pollAlerts, POLL_INTERVAL_MS);
 pollLiveBuses();
+pollAlerts();
 
 server.listen(PORT, () => {
   console.log(`WebSocket server listening on port ${PORT}, polling ${BACKEND_URL} every ${POLL_INTERVAL_MS}ms`);
