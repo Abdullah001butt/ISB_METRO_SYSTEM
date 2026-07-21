@@ -37,6 +37,38 @@ class Bus {
   }
 }
 
+class Trip {
+  final String id;
+  final String busId;
+  final String status;
+
+  Trip({required this.id, required this.busId, required this.status});
+
+  factory Trip.fromJson(Map<String, dynamic> json) {
+    return Trip(
+      id: json['id'] as String,
+      busId: json['busId'] as String,
+      status: json['status'] as String,
+    );
+  }
+}
+
+class DriverAlert {
+  final String id;
+  final String type;
+  final String message;
+
+  DriverAlert({required this.id, required this.type, required this.message});
+
+  factory DriverAlert.fromJson(Map<String, dynamic> json) {
+    return DriverAlert(
+      id: json['id'] as String,
+      type: json['type'] as String,
+      message: json['message'] as String,
+    );
+  }
+}
+
 class Driver {
   final String id;
   final String name;

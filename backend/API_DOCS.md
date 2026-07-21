@@ -43,6 +43,33 @@ Driver login.
 **200:** `{ "token": string, "driver": { "id", "name", "cnic" } }`
 **401:** invalid credentials or inactive driver
 
+### `GET /api/driver/me`  🔒 driver
+Returns the signed-in driver's profile and their assigned bus(es)/route(s).
+
+### `GET /api/driver/alerts?busId=`  🔒 driver
+Open/acknowledged alerts (e.g. route deviation) for a bus assigned to the
+signed-in driver — used by the driver app to surface in-app warnings.
+
+### `POST /api/trip/start`  🔒 driver
+Starts (or resumes an existing in-progress) trip for a bus assigned to the
+signed-in driver.
+
+**Body:** `{ "busId": string }`
+**201/200:** `{ "trip": { "id", "busId", "routeId", "status", "startedAt" } }`
+
+### `POST /api/trip/end`  🔒 driver
+Ends a trip owned by the signed-in driver.
+
+**Body:** `{ "tripId": string }`
+**200:** `{ "trip": { ..., "status": "COMPLETED", "endedAt" } }`
+
+### `POST /api/alerts/emergency`  🔒 driver
+Raises an `EMERGENCY` alert for a bus assigned to the signed-in driver,
+visible to admins immediately.
+
+**Body:** `{ "busId": string, "message"?: string }`
+**201:** `{ "alert": { "id", "type": "EMERGENCY", "message", ... } }`
+
 ---
 
 ## Stations

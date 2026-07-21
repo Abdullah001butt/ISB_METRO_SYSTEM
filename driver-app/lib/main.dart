@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'api_client.dart';
+import 'background_service.dart';
 import 'login_screen.dart';
 import 'dashboard_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeBackgroundService();
   runApp(const DriverApp());
 }
 

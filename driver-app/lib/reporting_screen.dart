@@ -1,7 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'api_client.dart';
+import 'background_service.dart';
 import 'models.dart';
 
 class ReportingScreen extends StatefulWidget {
@@ -14,17 +18,22 @@ class ReportingScreen extends StatefulWidget {
 }
 
 class _ReportingScreenState extends State<ReportingScreen> {
-  bool _onDuty = false;
+  bool _onTrip = false;
   bool _busy = false;
-  String _status = 'Tap "Go On Duty" to start sharing your live location.';
-  Position? _lastPosition;
+  String _status = 'Tap "Start Trip" to begin sharing your live location.';
+  Trip? _activeTrip;
   int _updatesSent = 0;
-  StreamSubscription<Position>? _positionSub;
+  double? _lastLat;
+  double? _lastLng;
   String _crowdLevel = 'LOW';
+  StreamSubscription<Map<String, dynamic>?>? _serviceSub;
+  Timer? _alertTimer;
+  List<DriverAlert> _alerts = [];
 
   @override
   void dispose() {
-    _positionSub?.cancel();
+    _serviceSub?.cancel();
+    _alertTimer?.cancel();
     super.dispose();
   }
 
@@ -34,60 +43,97 @@ class _ReportingScreenState extends State<ReportingScreen> {
       permission = await Geolocator.requestPermission();
     }
     if (permission == LocationPermission.deniedForever || permission == LocationPermission.denied) {
-      setState(() => _status = 'Location permission is required to report GPS.');
+      setState(() => _status = 'Location permission is required to start a trip.');
       return false;
     }
     if (!await Geolocator.isLocationServiceEnabled()) {
       setState(() => _status = 'Please enable location services on this device.');
       return false;
     }
+
+    await Permission.notification.request();
+    if (permission == LocationPermission.whileInUse) {
+      await Permission.locationAlways.request();
+    }
     return true;
   }
 
-  Future<void> _toggleDuty() async {
-    if (_onDuty) {
-      _positionSub?.cancel();
-      setState(() {
-        _onDuty = false;
-        _status = 'Off duty. Location sharing stopped.';
-      });
+  Future<void> _startTrip() async {
+    setState(() => _busy = true);
+    final granted = await _ensureLocationPermission();
+    if (!granted) {
+      setState(() => _busy = false);
       return;
     }
 
-    setState(() => _busy = true);
-    final granted = await _ensureLocationPermission();
-    setState(() => _busy = false);
-    if (!granted) return;
+    try {
+      final trip = await widget.api.startTrip(widget.bus.id);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(activeBusIdKey, widget.bus.id);
 
-    setState(() {
-      _onDuty = true;
-      _status = 'On duty — sharing live location...';
-    });
+      final service = FlutterBackgroundService();
+      await service.startService();
 
-    _positionSub = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 10,
-      ),
-    ).listen((position) async {
-      _lastPosition = position;
-      try {
-        await widget.api.postGps(
-          busId: widget.bus.id,
-          latitude: position.latitude,
-          longitude: position.longitude,
-          speed: position.speed >= 0 ? position.speed * 3.6 : null,
-        );
-        if (!mounted) return;
+      _serviceSub = service.on('gpsUpdate').listen((event) {
+        if (event == null || !mounted) return;
         setState(() {
-          _updatesSent++;
-          _status = 'On duty — last update sent successfully.';
+          _updatesSent = event['updatesSent'] as int;
+          _lastLat = event['latitude'] as double;
+          _lastLng = event['longitude'] as double;
+          _status = 'On trip — sharing live location...';
         });
-      } catch (e) {
-        if (!mounted) return;
-        setState(() => _status = 'Failed to send update: $e');
+      });
+
+      _alertTimer = Timer.periodic(const Duration(seconds: 15), (_) => _pollAlerts());
+      _pollAlerts();
+
+      setState(() {
+        _onTrip = true;
+        _activeTrip = trip;
+        _status = 'On trip — sharing live location...';
+      });
+    } catch (e) {
+      setState(() => _status = 'Failed to start trip: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _endTrip() async {
+    setState(() => _busy = true);
+    try {
+      final service = FlutterBackgroundService();
+      service.invoke('stopService');
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(activeBusIdKey);
+      _serviceSub?.cancel();
+      _alertTimer?.cancel();
+
+      if (_activeTrip != null) {
+        await widget.api.endTrip(_activeTrip!.id);
       }
-    });
+
+      setState(() {
+        _onTrip = false;
+        _activeTrip = null;
+        _status = 'Trip ended. Location sharing stopped.';
+        _alerts = [];
+      });
+    } catch (e) {
+      setState(() => _status = 'Failed to end trip cleanly: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _pollAlerts() async {
+    try {
+      final alerts = await widget.api.fetchAlerts(widget.bus.id);
+      if (!mounted) return;
+      setState(() => _alerts = alerts);
+    } catch (_) {
+      // Skip this tick; next poll will retry.
+    }
   }
 
   Future<void> _setCrowdLevel(String level) async {
@@ -106,6 +152,46 @@ class _ReportingScreenState extends State<ReportingScreen> {
     }
   }
 
+  Future<void> _confirmEmergency() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Report Emergency?'),
+        content: Text(
+          'This immediately alerts dispatch admins that bus '
+          '${widget.bus.busNumber} needs urgent attention. Only use this for a real emergency.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Report Emergency'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await widget.api.reportEmergency(busId: widget.bus.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Emergency reported to dispatch.'), backgroundColor: Colors.red),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to report emergency: $e')),
+      );
+    }
+  }
+
+  bool get _hasRouteDeviation => _alerts.any((a) => a.type == 'ROUTE_DEVIATION');
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,25 +206,47 @@ class _ReportingScreenState extends State<ReportingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (_hasRouteDeviation)
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFF59E0B)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Color(0xFFB45309)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'You appear to be off your assigned route.',
+                        style: TextStyle(color: Color(0xFF92400E), fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Card(
-              color: _onDuty ? const Color(0xFFD1FAE5) : Colors.white,
+              color: _onTrip ? const Color(0xFFD1FAE5) : Colors.white,
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
                     Icon(
-                      _onDuty ? Icons.gps_fixed : Icons.gps_off,
+                      _onTrip ? Icons.gps_fixed : Icons.gps_off,
                       size: 48,
-                      color: _onDuty ? const Color(0xFF059669) : Colors.black38,
+                      color: _onTrip ? const Color(0xFF059669) : Colors.black38,
                     ),
                     const SizedBox(height: 12),
                     Text(_status, textAlign: TextAlign.center),
-                    if (_onDuty) ...[
+                    if (_onTrip) ...[
                       const SizedBox(height: 8),
                       Text('Updates sent: $_updatesSent', style: const TextStyle(color: Colors.black54)),
-                      if (_lastPosition != null)
+                      if (_lastLat != null && _lastLng != null)
                         Text(
-                          '${_lastPosition!.latitude.toStringAsFixed(5)}, ${_lastPosition!.longitude.toStringAsFixed(5)}',
+                          '${_lastLat!.toStringAsFixed(5)}, ${_lastLng!.toStringAsFixed(5)}',
                           style: const TextStyle(color: Colors.black54, fontSize: 12),
                         ),
                     ],
@@ -148,13 +256,23 @@ class _ReportingScreenState extends State<ReportingScreen> {
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
-              onPressed: _busy ? null : _toggleDuty,
-              icon: Icon(_onDuty ? Icons.stop_circle : Icons.play_circle_fill),
-              label: Text(_onDuty ? 'Go Off Duty' : 'Go On Duty'),
+              onPressed: _busy ? null : (_onTrip ? _endTrip : _startTrip),
+              icon: Icon(_onTrip ? Icons.stop_circle : Icons.play_circle_fill),
+              label: Text(_onTrip ? 'End Trip' : 'Start Trip'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _onDuty ? Colors.redAccent : const Color(0xFF059669),
+                backgroundColor: _onTrip ? Colors.redAccent : const Color(0xFF059669),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _confirmEmergency,
+              icon: const Icon(Icons.emergency, color: Colors.red),
+              label: const Text('Emergency', style: TextStyle(color: Colors.red)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.red),
+                padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
             const SizedBox(height: 32),

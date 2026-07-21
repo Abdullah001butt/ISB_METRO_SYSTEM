@@ -12,11 +12,26 @@ now backed by a real device instead of a synthetic script.
   locally via `shared_preferences` and reused on next launch.
 - **Dashboard** — fetches `/api/driver/me` and lists the bus(es) assigned to
   the signed-in driver.
-- **Go On Duty** — streams the device's live location (via `geolocator`)
-  and posts each update to `/api/gps/update`, roughly every 10 meters of
-  movement.
+- **Start Trip / End Trip** — `Start Trip` calls `/api/trip/start` (creating
+  a `Trip` row) and launches an Android foreground service that keeps
+  streaming GPS to `/api/gps/update` even if the app is backgrounded or the
+  screen is locked — a persistent notification shows it's running. `End Trip`
+  stops the service and calls `/api/trip/end`.
 - **Crowd level reporting** — one-tap LOW / MEDIUM / HIGH buttons post to
   `/api/crowd/update`.
+- **Emergency button** — one tap (with a confirmation dialog) posts an
+  `EMERGENCY` alert to `/api/alerts/emergency`, visible to admins immediately.
+- **Route deviation warning** — while on a trip, the app polls
+  `/api/driver/alerts` every 15s and shows an in-app banner if the backend's
+  route-deviation detection has flagged the bus as off-route.
+
+### Background GPS details
+
+True background tracking uses the `flutter_background_service` plugin to run
+a foreground Android service (`foregroundServiceType="location"`). On first
+"Start Trip" the app also requests the "Allow all the time" background
+location permission and notification permission — Android requires these to
+be granted via the system permission flow, not just an in-app dialog.
 
 ## Backend
 

@@ -107,4 +107,51 @@ class ApiClient {
     );
     _decode(res);
   }
+
+  Future<Trip> startTrip(String busId) async {
+    await _loadToken();
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/trip/start'),
+      headers: _headers,
+      body: jsonEncode({'busId': busId}),
+    );
+    final data = _decode(res);
+    return Trip.fromJson(data['trip'] as Map<String, dynamic>);
+  }
+
+  Future<void> endTrip(String tripId) async {
+    await _loadToken();
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/trip/end'),
+      headers: _headers,
+      body: jsonEncode({'tripId': tripId}),
+    );
+    _decode(res);
+  }
+
+  Future<void> reportEmergency({required String busId, String? message}) async {
+    await _loadToken();
+    final payload = <String, dynamic>{'busId': busId};
+    if (message != null) {
+      payload['message'] = message;
+    }
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/alerts/emergency'),
+      headers: _headers,
+      body: jsonEncode(payload),
+    );
+    _decode(res);
+  }
+
+  Future<List<DriverAlert>> fetchAlerts(String busId) async {
+    await _loadToken();
+    final res = await http.get(
+      Uri.parse('$baseUrl/api/driver/alerts?busId=$busId'),
+      headers: _headers,
+    );
+    final data = _decode(res);
+    return (data['alerts'] as List<dynamic>)
+        .map((a) => DriverAlert.fromJson(a as Map<String, dynamic>))
+        .toList();
+  }
 }
