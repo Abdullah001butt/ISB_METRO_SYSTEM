@@ -18,8 +18,10 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   Timer? _messageTimer;
+  Timer? _stopRequestTimer;
   final _notifications = FlutterLocalNotificationsPlugin();
   final Set<String> _notifiedMessageIds = {};
+  final Set<String> _notifiedStopRequestIds = {};
 
   @override
   void initState() {
@@ -31,12 +33,71 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
     _messageTimer = Timer.periodic(const Duration(seconds: 20), (_) => _pollMessages());
     _pollMessages();
+    _stopRequestTimer = Timer.periodic(const Duration(seconds: 10), (_) => _pollStopRequests());
+    _pollStopRequests();
   }
 
   @override
   void dispose() {
     _messageTimer?.cancel();
+    _stopRequestTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _pollStopRequests() async {
+    try {
+      final requests = await widget.api.fetchStopRequests();
+      for (final req in requests) {
+        if (_notifiedStopRequestIds.contains(req.id)) continue;
+        _notifiedStopRequestIds.add(req.id);
+        await _notifications.show(
+          id: req.id.hashCode,
+          title: 'Stop requested',
+          body: 'A passenger asked to stop at ${req.stationName}.',
+          notificationDetails: const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'metro_driver_stop_requests',
+              'Passenger Stop Requests',
+              importance: Importance.high,
+              priority: Priority.high,
+            ),
+          ),
+        );
+        if (mounted) _showStopRequestDialog(req);
+      }
+    } catch (_) {
+      // Skip this tick; next poll will retry.
+    }
+  }
+
+  Future<void> _showStopRequestDialog(StopRequest req) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.pin_drop, color: Color(0xFF059669), size: 36),
+        title: const Text('Stop Requested'),
+        content: Text('A passenger has requested to stop at ${req.stationName}.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Dismiss'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF059669)),
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              try {
+                await widget.api.respondToStopRequest(req.id, reply: 'On my way');
+              } catch (_) {
+                // Best-effort acknowledgement.
+              }
+            },
+            child: const Text("Acknowledge (On my way)"),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _pollMessages() async {

@@ -64,6 +64,28 @@ model Driver {
   messages DriverMessage[]
 }
 
+model Passenger {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  favoriteStations PassengerFavoriteStation[]
+}
+
+model PassengerFavoriteStation {
+  id          String    @id @default(cuid())
+  passengerId String
+  passenger   Passenger @relation(fields: [passengerId], references: [id])
+  stationId   String
+  station     Station   @relation(fields: [stationId], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@unique([passengerId, stationId])
+}
+
 model PushSubscription {
   id             String    @id @default(cuid())
   endpoint       String    @unique
@@ -105,6 +127,7 @@ model Bus {
   trips        Trip[]
   alerts       Alert[]
   aiPredictions AIPrediction[]
+  stopRequests StopRequest[]
 }
 
 model Route {
@@ -129,6 +152,8 @@ model Station {
 
   busRoutes         BusRoute[]
   pushSubscriptions PushSubscription[]
+  favoritedBy       PassengerFavoriteStation[]
+  stopRequests      StopRequest[]
 }
 
 model BusRoute {
@@ -155,6 +180,25 @@ model Trip {
   startedAt DateTime?
   endedAt   DateTime?
   createdAt DateTime   @default(now())
+}
+
+enum StopRequestStatus {
+  PENDING
+  ACKNOWLEDGED
+}
+
+model StopRequest {
+  id           String            @id @default(cuid())
+  busId        String
+  bus          Bus               @relation(fields: [busId], references: [id])
+  stationId    String
+  station      Station           @relation(fields: [stationId], references: [id])
+  status       StopRequestStatus @default(PENDING)
+  driverReply  String?
+  createdAt    DateTime          @default(now())
+  respondedAt  DateTime?
+
+  @@index([busId, status])
 }
 
 model GPSLog {

@@ -240,6 +240,29 @@ Manually acknowledge/resolve an alert.
 
 ---
 
+## Stop Requests
+
+The "Live Passenger ↔ Driver Request Link" feature: a passenger in Ride Mode can request a stop, and the assigned driver sees it in near-real-time via polling.
+
+### `POST /api/stop-requests`  public (rate-limited, 5/min per IP)
+**Body:** `{ "busId": string, "stationId": string }`
+**201:** `{ "stopRequest": StopRequest }` — status starts as `PENDING`
+
+### `GET /api/stop-requests/[id]`  public
+Passengers poll this to see if the driver has acknowledged.
+**200:** `{ "stopRequest": StopRequest }` (includes `station`)
+
+### `GET /api/driver/stop-requests`  🔒 driver
+Pending stop requests for the driver's assigned bus(es), oldest first.
+**200:** `{ "stopRequests": StopRequest[] }` (includes `station`)
+
+### `POST /api/driver/stop-requests/[id]/respond`  🔒 driver
+Acknowledges a stop request for a bus assigned to this driver.
+**Body:** `{ "reply"?: string }` (defaults to `"On my way"`)
+**200:** `{ "stopRequest": StopRequest }` — status becomes `ACKNOWLEDGED`
+
+---
+
 ## AI Predictions
 
 ### `GET /api/predictions?busId=...&stationId=...`

@@ -6,7 +6,7 @@ function revokedJtiKey(jti: string) {
   return `revoked:jti:${jti}`;
 }
 
-function revokedBeforeKey(role: "admin" | "driver", subjectId: string) {
+function revokedBeforeKey(role: "admin" | "driver" | "passenger", subjectId: string) {
   return `revoked:before:${role}:${subjectId}`;
 }
 
@@ -16,13 +16,13 @@ export async function revokeToken(jti: string): Promise<void> {
 }
 
 /** Revokes every token issued to this subject before now (force logout everywhere). */
-export async function revokeAllSessions(role: "admin" | "driver", subjectId: string): Promise<void> {
+export async function revokeAllSessions(role: "admin" | "driver" | "passenger", subjectId: string): Promise<void> {
   await redis.set(revokedBeforeKey(role, subjectId), Date.now(), { ex: TOKEN_TTL_SECONDS });
 }
 
 /** True if the token should be rejected despite a valid signature. */
 export async function isRevoked(
-  role: "admin" | "driver",
+  role: "admin" | "driver" | "passenger",
   subjectId: string,
   jti: string,
   issuedAtSeconds: number

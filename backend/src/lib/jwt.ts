@@ -9,12 +9,15 @@ if (!JWT_SECRET) {
 
 export type TokenPayload = {
   sub: string;
-  role: "admin" | "driver";
+  role: "admin" | "driver" | "passenger";
   jti: string;
   iat: number;
 };
 
-export function signToken(payload: { sub: string; role: "admin" | "driver" }): { token: string; jti: string } {
+export function signToken(payload: {
+  sub: string;
+  role: "admin" | "driver" | "passenger";
+}): { token: string; jti: string } {
   const jti = randomUUID();
   const token = jwt.sign({ ...payload, jti }, JWT_SECRET as string, { expiresIn: "7d" });
   return { token, jti };

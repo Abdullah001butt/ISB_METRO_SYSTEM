@@ -29,6 +29,13 @@ export const emergencyRateLimit = new Ratelimit({
   prefix: "ratelimit:emergency",
 });
 
+// Passenger stop requests: generous enough for real use, tight enough to stop button-mashing.
+export const stopRequestRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(5, "1 m"),
+  prefix: "ratelimit:stop-request",
+});
+
 function clientIp(request: NextRequest): string {
   const forwardedFor = request.headers.get("x-forwarded-for");
   return forwardedFor?.split(",")[0]?.trim() ?? "unknown";

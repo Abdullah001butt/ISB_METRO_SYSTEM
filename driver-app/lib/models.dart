@@ -139,6 +139,29 @@ class AdminMessage {
   }
 }
 
+class StopRequest {
+  final String id;
+  final String busId;
+  final String stationName;
+  final DateTime createdAt;
+
+  StopRequest({
+    required this.id,
+    required this.busId,
+    required this.stationName,
+    required this.createdAt,
+  });
+
+  factory StopRequest.fromJson(Map<String, dynamic> json) {
+    return StopRequest(
+      id: json['id'] as String,
+      busId: json['busId'] as String,
+      stationName: (json['station'] as Map<String, dynamic>)['name'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+    );
+  }
+}
+
 class Driver {
   final String id;
   final String name;

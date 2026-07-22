@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
       const { payload } = await jwtVerify(authHeader.slice("Bearer ".length), JWT_SECRET);
       const { sub, role, jti, iat } = payload as {
         sub?: string;
-        role?: "admin" | "driver";
+        role?: "admin" | "driver" | "passenger";
         jti?: string;
         iat?: number;
       };

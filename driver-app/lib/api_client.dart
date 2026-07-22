@@ -203,4 +203,26 @@ class ApiClient {
     );
     _decode(res);
   }
+
+  Future<List<StopRequest>> fetchStopRequests() async {
+    await _loadToken();
+    final res = await http.get(
+      Uri.parse('$baseUrl/api/driver/stop-requests'),
+      headers: _headers,
+    );
+    final data = _decode(res);
+    return (data['stopRequests'] as List<dynamic>)
+        .map((r) => StopRequest.fromJson(r as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> respondToStopRequest(String id, {String? reply}) async {
+    await _loadToken();
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/driver/stop-requests/$id/respond'),
+      headers: _headers,
+      body: jsonEncode({if (reply != null) 'reply': reply}),
+    );
+    _decode(res);
+  }
 }
