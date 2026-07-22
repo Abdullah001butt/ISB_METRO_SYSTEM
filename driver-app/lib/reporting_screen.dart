@@ -23,6 +23,7 @@ class _ReportingScreenState extends State<ReportingScreen> {
   String _status = 'Tap "Start Trip" to begin sharing your live location.';
   Trip? _activeTrip;
   int _updatesSent = 0;
+  int _queuedCount = 0;
   double? _lastLat;
   double? _lastLng;
   String _crowdLevel = 'LOW';
@@ -78,6 +79,7 @@ class _ReportingScreenState extends State<ReportingScreen> {
         if (event == null || !mounted) return;
         setState(() {
           _updatesSent = event['updatesSent'] as int;
+          _queuedCount = (event['queuedCount'] as int?) ?? 0;
           _lastLat = event['latitude'] as double;
           _lastLng = event['longitude'] as double;
           _status = 'On trip — sharing live location...';
@@ -201,7 +203,7 @@ class _ReportingScreenState extends State<ReportingScreen> {
         backgroundColor: const Color(0xFF059669),
         foregroundColor: Colors.white,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -244,6 +246,11 @@ class _ReportingScreenState extends State<ReportingScreen> {
                     if (_onTrip) ...[
                       const SizedBox(height: 8),
                       Text('Updates sent: $_updatesSent', style: const TextStyle(color: Colors.black54)),
+                      if (_queuedCount > 0)
+                        Text(
+                          '$_queuedCount queued offline — will retry automatically',
+                          style: const TextStyle(color: Color(0xFFB45309), fontSize: 12),
+                        ),
                       if (_lastLat != null && _lastLng != null)
                         Text(
                           '${_lastLat!.toStringAsFixed(5)}, ${_lastLng!.toStringAsFixed(5)}',
@@ -297,6 +304,32 @@ class _ReportingScreenState extends State<ReportingScreen> {
                 );
               }).toList(),
             ),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                const Icon(Icons.event_seat_outlined, size: 18, color: Color(0xFF059669)),
+                const SizedBox(width: 6),
+                Text('Capacity: ${widget.bus.capacity} seats', style: const TextStyle(fontWeight: FontWeight.w600)),
+              ],
+            ),
+            if (widget.bus.route != null && widget.bus.route!.stations.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                '${widget.bus.route!.name} Stations',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: widget.bus.route!.stations
+                    .map((station) => Chip(
+                          label: Text(station.name, style: const TextStyle(fontSize: 12)),
+                          backgroundColor: const Color(0xFFD1FAE5),
+                        ))
+                    .toList(),
+              ),
+            ],
           ],
         ),
       ),

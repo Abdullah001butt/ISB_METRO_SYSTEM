@@ -1,11 +1,33 @@
-class Route {
+class Station {
   final String id;
   final String name;
 
-  Route({required this.id, required this.name});
+  Station({required this.id, required this.name});
+
+  factory Station.fromJson(Map<String, dynamic> json) {
+    return Station(id: json['id'] as String, name: json['name'] as String);
+  }
+}
+
+class Route {
+  final String id;
+  final String name;
+  final List<Station> stations;
+
+  Route({required this.id, required this.name, this.stations = const []});
 
   factory Route.fromJson(Map<String, dynamic> json) {
-    return Route(id: json['id'] as String, name: json['name'] as String);
+    final busRoutes = json['busRoutes'] as List<dynamic>?;
+    return Route(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      stations: busRoutes == null
+          ? const []
+          : busRoutes
+              .map((br) => Station.fromJson(
+                  (br as Map<String, dynamic>)['station'] as Map<String, dynamic>))
+              .toList(),
+    );
   }
 }
 
@@ -65,6 +87,54 @@ class DriverAlert {
       id: json['id'] as String,
       type: json['type'] as String,
       message: json['message'] as String,
+    );
+  }
+}
+
+class TripHistoryEntry {
+  final String id;
+  final String busNumber;
+  final String routeName;
+  final DateTime? startedAt;
+  final DateTime? endedAt;
+  final int? durationMinutes;
+  final double distanceKm;
+
+  TripHistoryEntry({
+    required this.id,
+    required this.busNumber,
+    required this.routeName,
+    required this.startedAt,
+    required this.endedAt,
+    required this.durationMinutes,
+    required this.distanceKm,
+  });
+
+  factory TripHistoryEntry.fromJson(Map<String, dynamic> json) {
+    return TripHistoryEntry(
+      id: json['id'] as String,
+      busNumber: json['busNumber'] as String,
+      routeName: json['routeName'] as String,
+      startedAt: json['startedAt'] == null ? null : DateTime.parse(json['startedAt'] as String),
+      endedAt: json['endedAt'] == null ? null : DateTime.parse(json['endedAt'] as String),
+      durationMinutes: json['durationMinutes'] as int?,
+      distanceKm: (json['distanceKm'] as num).toDouble(),
+    );
+  }
+}
+
+class AdminMessage {
+  final String id;
+  final String message;
+  final DateTime createdAt;
+
+  AdminMessage({required this.id, required this.message, required this.createdAt});
+
+  factory AdminMessage.fromJson(Map<String, dynamic> json) {
+    return AdminMessage(
+      id: json['id'] as String,
+      message: json['message'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
     );
   }
 }

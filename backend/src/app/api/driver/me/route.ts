@@ -22,7 +22,16 @@ export async function GET(request: NextRequest) {
           busNumber: true,
           capacity: true,
           isActive: true,
-          route: { select: { id: true, name: true } },
+          route: {
+            select: {
+              id: true,
+              name: true,
+              busRoutes: {
+                orderBy: { sequence: "asc" },
+                select: { sequence: true, station: { select: { id: true, name: true } } },
+              },
+            },
+          },
         },
       },
     },

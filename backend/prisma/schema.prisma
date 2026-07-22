@@ -59,8 +59,18 @@ model Driver {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  buses  Bus[]
-  trips  Trip[]
+  buses    Bus[]
+  trips    Trip[]
+  messages DriverMessage[]
+}
+
+model DriverMessage {
+  id        String    @id @default(cuid())
+  driverId  String
+  driver    Driver    @relation(fields: [driverId], references: [id])
+  message   String
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
 }
 
 model Bus {

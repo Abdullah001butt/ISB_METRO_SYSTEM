@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent, Fragment } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { Driver } from "@/lib/types";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -21,6 +21,10 @@ export default function DriversPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const [messagingId, setMessagingId] = useState<string | null>(null);
+  const [messageText, setMessageText] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -76,6 +80,20 @@ export default function DriversPage() {
     }
   }
 
+  async function handleSendMessage(driverId: string) {
+    if (!messageText.trim()) return;
+    setSendingMessage(true);
+    try {
+      await api.post(`/api/drivers/${driverId}/message`, { message: messageText.trim() });
+      setMessagingId(null);
+      setMessageText("");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to send message");
+    } finally {
+      setSendingMessage(false);
+    }
+  }
+
   return (
     <div>
       <PageHeader title="Drivers" description="Manage driver accounts and credentials." />
@@ -120,24 +138,59 @@ export default function DriversPage() {
               <EmptyRow colSpan={5}>No drivers yet — add one above.</EmptyRow>
             ) : (
               drivers.map((d) => (
-                <tr key={d.id} className="hover:bg-canvas">
-                  <td className="px-4 py-3 font-medium text-ink">{d.name}</td>
-                  <td className="px-4 py-3 text-muted">{d.cnic}</td>
-                  <td className="px-4 py-3 text-muted">{d.phone}</td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => toggleActive(d)}>
-                      <Badge tone={d.isActive ? "green" : "gray"}>
-                        {d.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Button variant="danger" onClick={() => handleDelete(d.id)}>
-                      <Icon name="delete" size={14} />
-                      Delete
-                    </Button>
-                  </td>
-                </tr>
+                <Fragment key={d.id}>
+                  <tr className="hover:bg-canvas">
+                    <td className="px-4 py-3 font-medium text-ink">{d.name}</td>
+                    <td className="px-4 py-3 text-muted">{d.cnic}</td>
+                    <td className="px-4 py-3 text-muted">{d.phone}</td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => toggleActive(d)}>
+                        <Badge tone={d.isActive ? "green" : "gray"}>
+                          {d.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-right space-x-2">
+                      <Button
+                        variant="secondary"
+                        onClick={() => {
+                          setMessagingId(messagingId === d.id ? null : d.id);
+                          setMessageText("");
+                        }}
+                      >
+                        <Icon name="chat" size={14} />
+                        Message
+                      </Button>
+                      <Button variant="danger" onClick={() => handleDelete(d.id)}>
+                        <Icon name="delete" size={14} />
+                        Delete
+                      </Button>
+                    </td>
+                  </tr>
+                  {messagingId === d.id && (
+                    <tr className="bg-canvas">
+                      <td colSpan={5} className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            autoFocus
+                            placeholder={`Message to ${d.name}...`}
+                            value={messageText}
+                            onChange={(e) => setMessageText(e.target.value)}
+                            className="flex-1"
+                            maxLength={280}
+                          />
+                          <Button
+                            disabled={sendingMessage || !messageText.trim()}
+                            onClick={() => handleSendMessage(d.id)}
+                          >
+                            <Icon name="send" size={14} />
+                            Send
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))
             )}
           </tbody>

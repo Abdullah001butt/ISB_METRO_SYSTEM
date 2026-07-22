@@ -154,4 +154,37 @@ class ApiClient {
         .map((a) => DriverAlert.fromJson(a as Map<String, dynamic>))
         .toList();
   }
+
+  Future<List<TripHistoryEntry>> fetchTripHistory() async {
+    await _loadToken();
+    final res = await http.get(
+      Uri.parse('$baseUrl/api/driver/trips'),
+      headers: _headers,
+    );
+    final data = _decode(res);
+    return (data['trips'] as List<dynamic>)
+        .map((t) => TripHistoryEntry.fromJson(t as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<AdminMessage>> fetchMessages({bool unreadOnly = false}) async {
+    await _loadToken();
+    final res = await http.get(
+      Uri.parse('$baseUrl/api/driver/messages${unreadOnly ? '?unread=true' : ''}'),
+      headers: _headers,
+    );
+    final data = _decode(res);
+    return (data['messages'] as List<dynamic>)
+        .map((m) => AdminMessage.fromJson(m as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> markMessageRead(String id) async {
+    await _loadToken();
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/driver/messages/$id/read'),
+      headers: _headers,
+    );
+    _decode(res);
+  }
 }

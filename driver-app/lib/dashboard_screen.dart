@@ -1,24 +1,81 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'api_client.dart';
 import 'models.dart';
 import 'reporting_screen.dart';
+import 'trip_history_screen.dart';
 import 'login_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   final ApiClient api;
   final Driver driver;
   const DashboardScreen({super.key, required this.api, required this.driver});
 
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  Timer? _messageTimer;
+  final _notifications = FlutterLocalNotificationsPlugin();
+  final Set<String> _notifiedMessageIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _notifications.initialize(
+      settings: const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      ),
+    );
+    _messageTimer = Timer.periodic(const Duration(seconds: 20), (_) => _pollMessages());
+    _pollMessages();
+  }
+
+  @override
+  void dispose() {
+    _messageTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _pollMessages() async {
+    try {
+      final messages = await widget.api.fetchMessages(unreadOnly: true);
+      for (final message in messages) {
+        if (_notifiedMessageIds.contains(message.id)) continue;
+        _notifiedMessageIds.add(message.id);
+        await _notifications.show(
+          id: message.id.hashCode,
+          title: 'Message from Dispatch',
+          body: message.message,
+          notificationDetails: const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'metro_driver_messages',
+              'Dispatch Messages',
+              importance: Importance.high,
+              priority: Priority.high,
+            ),
+          ),
+        );
+        await widget.api.markMessageRead(message.id);
+      }
+    } catch (_) {
+      // Skip this tick; next poll will retry.
+    }
+  }
+
   Future<void> _signOut(BuildContext context) async {
-    await api.clearToken();
+    await widget.api.clearToken();
     if (!context.mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => LoginScreen(api: api)),
+      MaterialPageRoute(builder: (_) => LoginScreen(api: widget.api)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final driver = widget.driver;
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -26,6 +83,15 @@ class DashboardScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF059669),
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Trip History',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => TripHistoryScreen(api: widget.api)),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => _signOut(context),
@@ -68,12 +134,14 @@ class DashboardScreen extends StatelessWidget {
                             child: Icon(Icons.directions_bus, color: Color(0xFF059669)),
                           ),
                           title: Text(bus.busNumber, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(bus.route?.name ?? 'Unassigned route'),
+                          subtitle: Text(
+                            '${bus.route?.name ?? 'Unassigned route'} · ${bus.capacity} seats',
+                          ),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) => ReportingScreen(api: api, bus: bus),
+                                builder: (_) => ReportingScreen(api: widget.api, bus: bus),
                               ),
                             );
                           },
