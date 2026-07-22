@@ -129,18 +129,18 @@ export default function StationDetailPage({
             ) : (
               buses.map((bus) => (
                 <Card key={bus.id}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-soft text-accent-strong">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-strong">
                         <Icon name="directions_bus" size={18} />
                       </div>
-                      <div>
-                        <p className="font-semibold text-ink">{bus.busNumber}</p>
-                        <p className="text-xs text-muted">{bus.route?.name}</p>
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-ink">{bus.busNumber}</p>
+                        <p className="truncate text-xs text-muted">{bus.route?.name}</p>
                       </div>
                     </div>
 
-                    <div className="text-right">
+                    <div className="shrink-0 text-right">
                       {bus.eta?.etaMinutes != null ? (
                         <>
                           <p className="flex items-center justify-end gap-1 text-lg font-bold text-accent-strong tabular-nums">

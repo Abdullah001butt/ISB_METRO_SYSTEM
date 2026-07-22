@@ -124,7 +124,7 @@ function ReplayView() {
         title="Route Replay"
         description="Play back a bus's recorded GPS history."
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Select value={busId} onChange={(e) => setBusId(e.target.value)}>
               <option value="">Select a bus...</option>
               {buses.map((b) => (
@@ -147,7 +147,7 @@ function ReplayView() {
         </div>
       ) : (
         <>
-          <div className="mb-3 flex items-center gap-3">
+          <div className="mb-3 flex flex-wrap items-center gap-3">
             <Button variant="secondary" onClick={() => setPlaying((p) => !p)}>
               <Icon name={playing ? "pause" : "play_arrow"} size={16} />
               {playing ? "Pause" : "Play"}
@@ -161,9 +161,9 @@ function ReplayView() {
                 setPlaying(false);
                 setIndex(Number(e.target.value));
               }}
-              className="flex-1"
+              className="min-w-35 flex-1"
             />
-            <span className="w-40 shrink-0 text-right text-xs text-muted tabular-nums">
+            <span className="shrink-0 text-xs text-muted tabular-nums sm:w-40 sm:text-right">
               {currentPoint ? new Date(currentPoint.recordedAt).toLocaleString() : ""}
             </span>
           </div>
@@ -181,7 +181,7 @@ export default function LiveTrackingPage() {
   const [mode, setMode] = useState<"live" | "replay">("live");
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col">
+    <div className="flex h-[70vh] flex-col sm:h-[calc(100vh-8rem)]">
       <div className="mb-4 flex gap-1 rounded-xl border border-line bg-surface p-1">
         {(["live", "replay"] as const).map((m) => (
           <button

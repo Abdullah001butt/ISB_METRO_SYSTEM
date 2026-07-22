@@ -160,12 +160,15 @@ export default function DashboardPage() {
               ) : (
                 <ul className="divide-y divide-line">
                   {alerts.map((a) => (
-                    <li key={a.id} className="flex items-center justify-between px-4 py-3 text-sm">
-                      <div className="flex items-center gap-3">
+                    <li
+                      key={a.id}
+                      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 text-sm"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
                         <Badge tone={a.type === "DELAY" ? "yellow" : "red"}>{a.type}</Badge>
-                        <span className="text-ink/80">{a.message}</span>
+                        <span className="min-w-0 text-ink/80">{a.message}</span>
                       </div>
-                      <span className="text-xs text-muted">{a.bus?.busNumber}</span>
+                      <span className="shrink-0 text-xs text-muted">{a.bus?.busNumber}</span>
                     </li>
                   ))}
                 </ul>

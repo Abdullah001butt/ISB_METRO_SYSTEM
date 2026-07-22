@@ -196,7 +196,7 @@ export default function HomePage() {
             </Badge>
           </div>
         </div>
-        <Card padded={false} className="h-120 overflow-hidden">
+        <Card padded={false} className="h-80 overflow-hidden sm:h-120">
           <LiveMap buses={buses} stations={stations} />
         </Card>
       </section>
