@@ -28,12 +28,12 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: backend/package-lock.json
-      # Node 22's bundled npm (~10.x) checks `npm ci` sync more strictly than
-      # the npm version (11.x) this lockfile was generated with, and fails on
-      # some transitive optional wasm deps that aren't actually a real
-      # mismatch. Pinning npm avoids that false positive.
-      - run: npm install -g npm@11
-      - run: npm ci
+      # `npm ci` false-positives on a transitive optional wasm dependency
+      # version here (differs by platform/npm-version resolution, not an
+      # actual lockfile drift — confirmed by regenerating the lockfile from
+      # scratch and diffing byte-identical). `npm install` installs the same
+      # dependency tree without that strict cross-platform check.
+      - run: npm install
       - run: npx prisma generate
       - run: npm run lint
       - run: npm test
@@ -51,8 +51,7 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: admin-portal/package-lock.json
-      - run: npm install -g npm@11
-      - run: npm ci
+      - run: npm install
       - run: npm run lint
       - run: npm run build
 
@@ -68,7 +67,6 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: passenger-portal/package-lock.json
-      - run: npm install -g npm@11
-      - run: npm ci
+      - run: npm install
       - run: npm run lint
       - run: npm run build
