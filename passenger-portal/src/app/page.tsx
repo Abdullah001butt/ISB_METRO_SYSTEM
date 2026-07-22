@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useLiveBuses } from "@/lib/useLiveBuses";
+import { useFavorites } from "@/lib/useFavorites";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { NearestStation, Station } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
@@ -28,6 +29,7 @@ export default function HomePage() {
   const [stations, setStations] = useState<Station[]>([]);
   const [query, setQuery] = useState("");
   const { buses, source } = useLiveBuses();
+  const { favorites } = useFavorites();
 
   const [locating, setLocating] = useState(false);
   const [nearest, setNearest] = useState<NearestStation[] | null>(null);
@@ -57,6 +59,7 @@ export default function HomePage() {
   }, [query, stations]);
 
   const reporting = buses.filter((b) => b.location).length;
+  const favoriteStations = stations.filter((s) => favorites.has(s.id));
 
   function goToFirst() {
     if (filtered.length > 0) router.push(`/stations/${filtered[0].id}`);
@@ -136,6 +139,21 @@ export default function HomePage() {
             </Button>
 
             {locationError && <p className="text-sm text-danger">{locationError}</p>}
+
+            {favoriteStations.length > 0 && (
+              <div className="flex flex-wrap justify-center gap-2">
+                {favoriteStations.map((s) => (
+                  <Link
+                    key={s.id}
+                    href={`/stations/${s.id}`}
+                    className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink shadow-sm hover:shadow-md"
+                  >
+                    <Icon name="star" size={13} filled className="text-amber-500" />
+                    {s.name}
+                  </Link>
+                ))}
+              </div>
+            )}
 
             {nearest && nearest.length > 0 && (
               <div className="w-full max-w-lg rounded-xl border border-line bg-surface p-3 text-left shadow-sm">

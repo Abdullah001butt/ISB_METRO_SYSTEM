@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_client.dart';
@@ -111,8 +114,9 @@ class _ReportingScreenState extends State<ReportingScreen> {
       _serviceSub?.cancel();
       _alertTimer?.cancel();
 
-      if (_activeTrip != null) {
-        await widget.api.endTrip(_activeTrip!.id);
+      final endedTripId = _activeTrip?.id;
+      if (endedTripId != null) {
+        await widget.api.endTrip(endedTripId);
       }
 
       setState(() {
@@ -121,11 +125,65 @@ class _ReportingScreenState extends State<ReportingScreen> {
         _status = 'Trip ended. Location sharing stopped.';
         _alerts = [];
       });
+
+      if (endedTripId != null) {
+        await _showShiftSummary(endedTripId);
+      }
     } catch (e) {
       setState(() => _status = 'Failed to end trip cleanly: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<void> _showShiftSummary(String tripId) async {
+    TripHistoryEntry? summary;
+    try {
+      final history = await widget.api.fetchTripHistory();
+      final matches = history.where((t) => t.id == tripId);
+      summary = matches.isEmpty ? null : matches.first;
+    } catch (_) {
+      // If this fails, we simply skip the summary — the trip itself already ended fine.
+    }
+    if (!mounted || summary == null) return;
+
+    final durationMinutes = summary.durationMinutes ?? 0;
+    final hours = durationMinutes ~/ 60;
+    final minutes = durationMinutes % 60;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Shift Summary'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _summaryRow(Icons.timer_outlined, 'Duration', hours > 0 ? '${hours}h ${minutes}m' : '${minutes}m'),
+            const SizedBox(height: 8),
+            _summaryRow(Icons.route_outlined, 'Distance', '${summary!.distanceKm.toStringAsFixed(1)} km'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: const Color(0xFF059669)),
+        const SizedBox(width: 8),
+        Text(label),
+        const Spacer(),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+      ],
+    );
   }
 
   Future<void> _pollAlerts() async {
@@ -155,31 +213,84 @@ class _ReportingScreenState extends State<ReportingScreen> {
   }
 
   Future<void> _confirmEmergency() async {
+    File? photo;
+    final messageController = TextEditingController();
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Report Emergency?'),
-        content: Text(
-          'This immediately alerts dispatch admins that bus '
-          '${widget.bus.busNumber} needs urgent attention. Only use this for a real emergency.',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Report Emergency?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'This immediately alerts dispatch admins that bus '
+                '${widget.bus.busNumber} needs urgent attention. Only use this for a real emergency.',
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: messageController,
+                decoration: const InputDecoration(
+                  labelText: 'What happened? (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+                maxLength: 200,
+              ),
+              if (photo != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(photo!, height: 100),
+                  ),
+                ),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final picked = await ImagePicker().pickImage(
+                    source: ImageSource.camera,
+                    imageQuality: 50,
+                    maxWidth: 800,
+                  );
+                  if (picked != null) {
+                    setDialogState(() => photo = File(picked.path));
+                  }
+                },
+                icon: const Icon(Icons.camera_alt_outlined),
+                label: Text(photo == null ? 'Attach Photo' : 'Retake Photo'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Report Emergency'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Report Emergency'),
-          ),
-        ],
       ),
     );
     if (confirmed != true) return;
 
+    String? photoDataUrl;
+    if (photo != null) {
+      final bytes = await photo!.readAsBytes();
+      photoDataUrl = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+    }
+
     try {
-      await widget.api.reportEmergency(busId: widget.bus.id);
+      await widget.api.reportEmergency(
+        busId: widget.bus.id,
+        message: messageController.text.trim().isEmpty ? null : messageController.text.trim(),
+        photoDataUrl: photoDataUrl,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Emergency reported to dispatch.'), backgroundColor: Colors.red),

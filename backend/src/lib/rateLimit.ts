@@ -2,7 +2,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { NextRequest, NextResponse } from "next/server";
 
-const redis = new Redis({
+export const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL!,
   token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
@@ -19,6 +19,14 @@ export const writeRateLimit = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(60, "1 m"),
   prefix: "ratelimit:write",
+});
+
+// Emergency alerts: tight — a stuck button or retry loop shouldn't be able to
+// flood dispatch with duplicate emergency alerts.
+export const emergencyRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(3, "1 m"),
+  prefix: "ratelimit:emergency",
 });
 
 function clientIp(request: NextRequest): string {

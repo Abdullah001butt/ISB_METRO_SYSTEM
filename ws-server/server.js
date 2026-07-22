@@ -4,6 +4,7 @@ const fetch = require("node-fetch");
 
 const BACKEND_URL = (process.env.BACKEND_URL || "http://localhost:3000").replace(/\/$/, "");
 const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 3000);
+const PUSH_CHECK_INTERVAL_MS = Number(process.env.PUSH_CHECK_INTERVAL_MS || 30000);
 const PORT = process.env.PORT || 8080;
 
 let lastLiveBuses = null;
@@ -76,6 +77,23 @@ async function pollAlerts() {
   }
 }
 
+// Vercel functions can't run their own background timers, so this always-on
+// process is what actually triggers the "bus approaching" push-notification
+// check on a schedule, rather than the backend polling itself.
+async function checkPushNotifications() {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/push/check`, { method: "POST" });
+    if (!res.ok) {
+      console.error(`Push check got non-OK status: ${res.status}`);
+      return;
+    }
+    const { checked, notified } = await res.json();
+    if (notified > 0) console.log(`Push check: ${notified}/${checked} subscriptions notified`);
+  } catch (err) {
+    console.error("Failed to trigger /api/push/check:", err.message);
+  }
+}
+
 wss.on("connection", (socket) => {
   console.log(`Client connected. Total: ${wss.clients.size}`);
 
@@ -93,8 +111,10 @@ wss.on("connection", (socket) => {
 
 setInterval(pollLiveBuses, POLL_INTERVAL_MS);
 setInterval(pollAlerts, POLL_INTERVAL_MS);
+setInterval(checkPushNotifications, PUSH_CHECK_INTERVAL_MS);
 pollLiveBuses();
 pollAlerts();
+checkPushNotifications();
 
 server.listen(PORT, () => {
   console.log(`WebSocket server listening on port ${PORT}, polling ${BACKEND_URL} every ${POLL_INTERVAL_MS}ms`);

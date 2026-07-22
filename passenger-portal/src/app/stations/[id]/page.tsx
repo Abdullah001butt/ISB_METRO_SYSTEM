@@ -8,7 +8,9 @@ import type { Station, LiveBus, BatchEtaResponse, BatchEtaEntry, Route } from "@
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
+import { Button } from "@/components/ui/Button";
 import { LiveCountdown } from "@/components/ui/LiveCountdown";
+import { usePushSubscription } from "@/lib/usePushSubscription";
 
 type BusWithEta = LiveBus & { eta: BatchEtaEntry | null };
 
@@ -21,6 +23,7 @@ export default function StationDetailPage({
 }) {
   const { id } = usePromise(params);
   const { t } = useLanguage();
+  const push = usePushSubscription(id);
   const [station, setStation] = useState<Station | null>(null);
   const [buses, setBuses] = useState<BusWithEta[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +103,20 @@ export default function StationDetailPage({
         <p className="mt-8 text-center text-sm text-danger">{error ?? t("stationNotFound")}</p>
       ) : (
         <>
-          <h1 className="mt-4 text-2xl font-bold text-ink">{station.name}</h1>
+          <div className="mt-4 flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-ink">{station.name}</h1>
+            {push.supported && (
+              <Button
+                variant={push.subscribed ? "secondary" : "primary"}
+                disabled={push.loading}
+                onClick={() => (push.subscribed ? push.unsubscribe() : push.subscribe())}
+              >
+                <Icon name={push.subscribed ? "notifications_active" : "notifications"} size={16} />
+                {push.subscribed ? t("notifyMeActive") : t("notifyMe")}
+              </Button>
+            )}
+          </div>
+          {push.error && <p className="mt-1 text-xs text-danger">{push.error}</p>}
           <p className="mt-1 text-sm text-muted">
             {buses.length} {buses.length === 1 ? t("busServing") : t("busesServing")}
           </p>

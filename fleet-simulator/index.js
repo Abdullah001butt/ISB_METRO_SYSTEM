@@ -136,14 +136,35 @@ async function tick(bus) {
   }
 }
 
+// Buses with a real driver on an active trip stand down here, rather than
+// fighting the driver's phone for the same bus's GPS trail — this was
+// previously producing physically-impossible jumps in real trip data
+// (e.g. a bus "teleporting" between a real phone location and a simulated one).
+async function fetchActiveDriverBusIds() {
+  try {
+    const { busIds } = await getJson("/api/trip/active");
+    return new Set(busIds);
+  } catch (err) {
+    console.error("Failed to fetch active driver trips, simulating all buses this tick:", err.message);
+    return new Set();
+  }
+}
+
 async function runTickForAll(fleetState) {
-  const results = await Promise.allSettled(fleetState.map((bus) => tick(bus)));
+  const activeDriverBusIds = await fetchActiveDriverBusIds();
+  const simulated = fleetState.filter((bus) => !activeDriverBusIds.has(bus.busId));
+  const skipped = fleetState.length - simulated.length;
+
+  const results = await Promise.allSettled(simulated.map((bus) => tick(bus)));
   const failures = results.filter((r) => r.status === "rejected");
   if (failures.length > 0) {
-    console.error(`${failures.length}/${fleetState.length} bus updates failed this tick:`);
+    console.error(`${failures.length}/${simulated.length} bus updates failed this tick:`);
     failures.forEach((f) => console.error(`  - ${f.reason?.message ?? f.reason}`));
   } else {
-    console.log(`Tick ok: ${fleetState.length} buses updated`);
+    console.log(
+      `Tick ok: ${simulated.length} buses updated` +
+        (skipped > 0 ? ` (${skipped} standing down for an active driver)` : "")
+    );
   }
 }
 

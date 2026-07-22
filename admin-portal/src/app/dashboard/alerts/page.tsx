@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Select } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { TableShell, Thead, EmptyRow } from "@/components/ui/DataTable";
+import { Icon } from "@/components/ui/Icon";
 
 const statusOptions = ["OPEN", "ACKNOWLEDGED", "RESOLVED"] as const;
 
@@ -70,18 +71,31 @@ export default function AlertsPage() {
       {error && <p className="mb-3 text-sm text-danger">{error}</p>}
 
       <TableShell>
-        <Thead columns={["Bus", "Type", "Message", "Status", "Created", ""]} />
+        <Thead columns={["Bus", "Type", "Message", "Photo", "Status", "Created", ""]} />
         <tbody className="divide-y divide-line">
           {loading ? (
-            <EmptyRow colSpan={6}>Loading...</EmptyRow>
+            <EmptyRow colSpan={7}>Loading...</EmptyRow>
           ) : alerts.length === 0 ? (
-            <EmptyRow colSpan={6}>No alerts.</EmptyRow>
+            <EmptyRow colSpan={7}>No alerts.</EmptyRow>
           ) : (
             alerts.map((a) => (
               <tr key={a.id} className="hover:bg-canvas">
                 <td className="px-4 py-3 font-medium text-ink">{a.bus?.busNumber ?? "-"}</td>
                 <td className="px-4 py-3 text-muted">{a.type}</td>
                 <td className="px-4 py-3 text-muted">{a.message}</td>
+                <td className="px-4 py-3">
+                  {a.photoDataUrl ? (
+                    <a href={a.photoDataUrl} target="_blank" rel="noreferrer">
+                      <img
+                        src={a.photoDataUrl}
+                        alt="Incident photo"
+                        className="h-10 w-10 rounded-lg object-cover"
+                      />
+                    </a>
+                  ) : (
+                    <Icon name="image_not_supported" size={16} className="text-muted" />
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   <Badge tone={statusTone(a.status)}>{a.status}</Badge>
                 </td>

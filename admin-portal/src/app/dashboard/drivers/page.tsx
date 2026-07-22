@@ -26,6 +26,9 @@ export default function DriversPage() {
   const [messageText, setMessageText] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
 
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+
   async function load() {
     setLoading(true);
     try {
@@ -80,6 +83,35 @@ export default function DriversPage() {
     }
   }
 
+  function toggleSelected(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelected((prev) => (prev.size === drivers.length ? new Set() : new Set(drivers.map((d) => d.id))));
+  }
+
+  async function handleBulkDeactivate() {
+    setBulkBusy(true);
+    setError(null);
+    try {
+      await Promise.all(
+        [...selected].map((id) => api.put(`/api/drivers/${id}`, { isActive: false }))
+      );
+      setSelected(new Set());
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to bulk-deactivate");
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   async function handleSendMessage(driverId: string) {
     if (!messageText.trim()) return;
     setSendingMessage(true);
@@ -128,18 +160,54 @@ export default function DriversPage() {
 
       {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
+      {selected.size > 0 && (
+        <Card className="mt-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-ink">{selected.size} driver(s) selected</p>
+            <Button variant="danger" onClick={handleBulkDeactivate} disabled={bulkBusy}>
+              <Icon name="block" size={15} />
+              Deactivate Selected
+            </Button>
+            <Button variant="secondary" onClick={() => setSelected(new Set())}>
+              Cancel
+            </Button>
+          </div>
+        </Card>
+      )}
+
       <div className="mt-6">
         <TableShell>
-          <Thead columns={["Name", "CNIC", "Phone", "Status", ""]} />
+          <Thead
+            columns={[
+              <input
+                key="select-all"
+                type="checkbox"
+                checked={drivers.length > 0 && selected.size === drivers.length}
+                onChange={toggleSelectAll}
+              />,
+              "Name",
+              "CNIC",
+              "Phone",
+              "Status",
+              "",
+            ]}
+          />
           <tbody className="divide-y divide-line">
             {loading ? (
-              <EmptyRow colSpan={5}>Loading...</EmptyRow>
+              <EmptyRow colSpan={6}>Loading...</EmptyRow>
             ) : drivers.length === 0 ? (
-              <EmptyRow colSpan={5}>No drivers yet — add one above.</EmptyRow>
+              <EmptyRow colSpan={6}>No drivers yet — add one above.</EmptyRow>
             ) : (
               drivers.map((d) => (
                 <Fragment key={d.id}>
                   <tr className="hover:bg-canvas">
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(d.id)}
+                        onChange={() => toggleSelected(d.id)}
+                      />
+                    </td>
                     <td className="px-4 py-3 font-medium text-ink">{d.name}</td>
                     <td className="px-4 py-3 text-muted">{d.cnic}</td>
                     <td className="px-4 py-3 text-muted">{d.phone}</td>
@@ -169,7 +237,7 @@ export default function DriversPage() {
                   </tr>
                   {messagingId === d.id && (
                     <tr className="bg-canvas">
-                      <td colSpan={5} className="px-4 py-3">
+                      <td colSpan={6} className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <Input
                             autoFocus

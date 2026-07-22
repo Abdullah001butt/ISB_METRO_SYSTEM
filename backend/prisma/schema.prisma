@@ -64,6 +64,19 @@ model Driver {
   messages DriverMessage[]
 }
 
+model PushSubscription {
+  id             String    @id @default(cuid())
+  endpoint       String    @unique
+  p256dh         String
+  auth           String
+  stationId      String
+  station        Station   @relation(fields: [stationId], references: [id])
+  createdAt      DateTime  @default(now())
+  lastNotifiedAt DateTime?
+
+  @@index([stationId])
+}
+
 model DriverMessage {
   id        String    @id @default(cuid())
   driverId  String
@@ -114,7 +127,8 @@ model Station {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  busRoutes BusRoute[]
+  busRoutes         BusRoute[]
+  pushSubscriptions PushSubscription[]
 }
 
 model BusRoute {
@@ -172,6 +186,7 @@ model Alert {
   type      AlertType
   status    AlertStatus @default(OPEN)
   message   String
+  photoDataUrl String?
   createdAt DateTime    @default(now())
   resolvedAt DateTime?
 }

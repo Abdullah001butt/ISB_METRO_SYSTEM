@@ -66,6 +66,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _signOut(BuildContext context) async {
+    await widget.api.logout();
     await widget.api.clearToken();
     if (!context.mounted) return;
     Navigator.of(context).pushReplacement(

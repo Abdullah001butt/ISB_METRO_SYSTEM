@@ -6,6 +6,7 @@ export const translations = {
   navStations: { en: "Stations", ur: "اسٹیشنز" },
   navPlanner: { en: "Trip Planner", ur: "سفری منصوبہ" },
   navAbout: { en: "About", ur: "تعارف" },
+  navFares: { en: "Fares", ur: "کرایہ" },
   brandName: { en: "Metro Bus Islamabad", ur: "میٹرو بس اسلام آباد" },
 
   // Footer
@@ -40,6 +41,8 @@ export const translations = {
   searchStations: { en: "Search stations...", ur: "اسٹیشنز تلاش کریں..." },
   loading: { en: "Loading...", ur: "لوڈ ہو رہا ہے..." },
   noStationsFound: { en: "No stations found.", ur: "کوئی اسٹیشن نہیں ملا۔" },
+  favoriteStations: { en: "Favorites", ur: "پسندیدہ" },
+  allStations: { en: "All Stations", ur: "تمام اسٹیشنز" },
 
   // Station detail
   backToStations: { en: "Back to stations", ur: "اسٹیشنز کی طرف واپس" },
@@ -50,6 +53,8 @@ export const translations = {
   aiPrediction: { en: "AI prediction", ur: "اے آئی تخمینہ" },
   estimated: { en: "estimated", ur: "تخمینہ" },
   crowdSuffix: { en: "crowd", ur: "ہجوم" },
+  notifyMe: { en: "Notify me", ur: "مجھے مطلع کریں" },
+  notifyMeActive: { en: "Notifications on", ur: "اطلاعات فعال" },
   stationNotFound: { en: "Station not found", ur: "اسٹیشن نہیں ملا" },
   minShort: { en: "min", ur: "منٹ" },
   secShort: { en: "sec", ur: "سیکنڈ" },
@@ -94,6 +99,20 @@ export const translations = {
     en: "Built for quick access — at a stop, on a phone, or on a station display screen.",
     ur: "فوری رسائی کے لیے بنایا گیا — اسٹاپ پر، فون پر، یا اسٹیشن کی ڈسپلے اسکرین پر۔",
   },
+
+  // Fares & Routes
+  faresTitle: { en: "Fares & Routes", ur: "کرایہ اور روٹس" },
+  faresSubtitle: {
+    en: "A flat fare applies across the entire network, regardless of distance travelled.",
+    ur: "پورے نیٹ ورک پر ایک ہی کرایہ لاگو ہوتا ہے، طے شدہ فاصلے سے قطع نظر۔",
+  },
+  flatFareLabel: { en: "Flat fare per journey", ur: "فی سفر یکساں کرایہ" },
+  fareNote: {
+    en: "Pay by card at the station gate, or with cash on board. Children under 5 ride free.",
+    ur: "اسٹیشن گیٹ پر کارڈ سے یا بس میں نقد ادائیگی کریں۔ 5 سال سے کم عمر بچوں کے لیے مفت سفر۔",
+  },
+  routesOnNetwork: { en: "Routes on this network", ur: "اس نیٹ ورک پر روٹس" },
+  stationsCount: { en: "stations", ur: "اسٹیشنز" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

@@ -46,9 +46,10 @@ export type LiveBus = Bus & {
 export type Alert = {
   id: string;
   busId: string | null;
-  type: "DELAY" | "ROUTE_DEVIATION" | "BREAKDOWN" | "OTHER";
+  type: "DELAY" | "ROUTE_DEVIATION" | "BREAKDOWN" | "EMERGENCY" | "OTHER";
   status: "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
   message: string;
+  photoDataUrl: string | null;
   createdAt: string;
   resolvedAt: string | null;
   bus: Bus | null;
@@ -83,11 +84,28 @@ export type RouteAnalytics = {
 
 export type PublicAlert = {
   id: string;
-  type: "DELAY" | "ROUTE_DEVIATION" | "BREAKDOWN" | "OTHER";
+  type: "DELAY" | "ROUTE_DEVIATION" | "BREAKDOWN" | "EMERGENCY" | "OTHER";
   status: "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
   message: string;
   createdAt: string;
   bus: { busNumber: string } | null;
+};
+
+export type DriverPerformance = {
+  driverId: string;
+  driverName: string;
+  isActive: boolean;
+  tripsCompleted: number;
+  totalDurationMinutes: number;
+  alertCount: number;
+};
+
+export type AlertAnalytics = {
+  lookbackDays: number;
+  currentlyOpen: number;
+  daily: { day: string; type: string; count: number }[];
+  byRoute: { routeId: string | null; routeName: string; type: string; count: number }[];
+  resolution: { type: string; avgResolutionMinutes: number | null; resolvedCount: number }[];
 };
 
 export type ActivityLog = {

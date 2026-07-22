@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth";
 import { logActivity } from "@/lib/activityLog";
 import { handleApiError } from "@/lib/errors";
+import { revokeAllSessions } from "@/lib/revocation";
 
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
@@ -52,6 +53,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
   try {
     const driver = await prisma.driver.update({ where: { id }, data });
+    if (data.isActive === false || password) {
+      await revokeAllSessions("driver", id);
+    }
     await logActivity(auth.sub, "driver.update", `Updated driver "${driver.name}" (${driver.id})`);
     return NextResponse.json({ driver: toPublicDriver(driver) });
   } catch (err) {
@@ -68,6 +72,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   const { id } = await params;
   try {
     await prisma.driver.delete({ where: { id } });
+    await revokeAllSessions("driver", id);
     await logActivity(auth.sub, "driver.delete", `Deleted driver (${id})`);
     return NextResponse.json({ success: true });
   } catch (err) {

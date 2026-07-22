@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jwtVerify } from "jose";
+import { isRevoked } from "@/lib/revocation";
 
 const ALLOWED_ORIGINS = [
   "http://localhost:3001",
@@ -17,11 +19,34 @@ function corsHeaders(origin: string | null) {
   return headers;
 }
 
-export function middleware(request: NextRequest) {
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
+
+export async function middleware(request: NextRequest) {
   const origin = request.headers.get("origin");
 
   if (request.method === "OPTIONS") {
     return new NextResponse(null, { status: 204, headers: corsHeaders(origin) });
+  }
+
+  const authHeader = request.headers.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    try {
+      const { payload } = await jwtVerify(authHeader.slice("Bearer ".length), JWT_SECRET);
+      const { sub, role, jti, iat } = payload as {
+        sub?: string;
+        role?: "admin" | "driver";
+        jti?: string;
+        iat?: number;
+      };
+      if (sub && role && jti && iat && (await isRevoked(role, sub, jti, iat))) {
+        return NextResponse.json(
+          { error: "Session revoked. Please sign in again." },
+          { status: 401, headers: corsHeaders(origin) }
+        );
+      }
+    } catch {
+      // Malformed/expired token — the route handler's own auth check will 401 it as before.
+    }
   }
 
   const response = NextResponse.next();

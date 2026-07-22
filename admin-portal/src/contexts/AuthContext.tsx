@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function logout() {
+    api.post("/api/auth/logout", {}).catch(() => {});
     clearToken();
     window.localStorage.removeItem("metrobus_admin_profile");
     setAdmin(null);

@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  const token = signToken({ sub: driver.id, role: "driver" });
+  const { token } = signToken({ sub: driver.id, role: "driver" });
 
   return NextResponse.json({
     token,

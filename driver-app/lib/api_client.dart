@@ -65,6 +65,15 @@ class ApiClient {
     return me();
   }
 
+  Future<void> logout() async {
+    await _loadToken();
+    try {
+      await http.post(Uri.parse('$baseUrl/api/auth/logout'), headers: _headers);
+    } catch (_) {
+      // Best-effort — the token is being discarded client-side regardless.
+    }
+  }
+
   Future<Driver> me() async {
     await _loadToken();
     final res = await http.get(
@@ -129,11 +138,18 @@ class ApiClient {
     _decode(res);
   }
 
-  Future<void> reportEmergency({required String busId, String? message}) async {
+  Future<void> reportEmergency({
+    required String busId,
+    String? message,
+    String? photoDataUrl,
+  }) async {
     await _loadToken();
     final payload = <String, dynamic>{'busId': busId};
     if (message != null) {
       payload['message'] = message;
+    }
+    if (photoDataUrl != null) {
+      payload['photoDataUrl'] = photoDataUrl;
     }
     final res = await http.post(
       Uri.parse('$baseUrl/api/alerts/emergency'),
