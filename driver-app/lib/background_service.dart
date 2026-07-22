@@ -1,4 +1,7 @@
+import 'dart:ui';
+
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_client.dart';
@@ -8,6 +11,19 @@ const String notificationChannelId = 'metro_driver_tracking';
 
 Future<void> initializeBackgroundService() async {
   final service = FlutterBackgroundService();
+
+  const channel = AndroidNotificationChannel(
+    notificationChannelId,
+    'Metro Bus Driver Tracking',
+    description: 'Shows when your location is being shared while on a trip.',
+    importance: Importance.low,
+  );
+
+  final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(channel);
 
   await service.configure(
     androidConfiguration: AndroidConfiguration(
@@ -25,6 +41,8 @@ Future<void> initializeBackgroundService() async {
 
 @pragma('vm:entry-point')
 void _onServiceStart(ServiceInstance service) async {
+  DartPluginRegistrant.ensureInitialized();
+
   final prefs = await SharedPreferences.getInstance();
   final busId = prefs.getString(activeBusIdKey);
   final api = ApiClient();
