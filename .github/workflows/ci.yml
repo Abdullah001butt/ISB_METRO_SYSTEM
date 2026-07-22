@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: ${{ secrets.CI_DATABASE_URL }}
+      JWT_SECRET: ${{ secrets.CI_JWT_SECRET }}
+      AI_API_KEY: ${{ secrets.CI_AI_API_KEY }}
+      UPSTASH_REDIS_REST_URL: ${{ secrets.CI_UPSTASH_REDIS_REST_URL }}
+      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.CI_UPSTASH_REDIS_REST_TOKEN }}
+      VAPID_PUBLIC_KEY: ${{ secrets.CI_VAPID_PUBLIC_KEY }}
+      VAPID_PRIVATE_KEY: ${{ secrets.CI_VAPID_PRIVATE_KEY }}
+      VAPID_SUBJECT: ${{ secrets.CI_VAPID_SUBJECT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  admin-portal:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin-portal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin-portal/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  passenger-portal:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: passenger-portal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: passenger-portal/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
